@@ -186,8 +186,55 @@ def katz_fractal_dimension(signal: ArrayLike) -> float:
     return numerator / denominator
 
 
+def higuchi_fractal_dimension(signal: ArrayLike, *, k_max: int = 10) -> float:
+    """Return Higuchi fractal dimension using scales one through ``k_max``.
+
+    Each scale averages the normalized lengths of all offset subsampled
+    curves. The result is the ordinary least-squares slope of ``log(L(k))``
+    against ``log(1 / k)``. Constant or indeterminate inputs return ``NaN``.
+    """
+    k_max = _validate_integer(k_max, name="k_max", minimum=2)
+    data = validate_signal(signal, minimum_length=2 * k_max + 1)
+    sample_count = int(data.size)
+    scales: list[float] = []
+    mean_lengths: list[float] = []
+    for scale in range(1, k_max + 1):
+        offset_lengths: list[float] = []
+        for offset in range(scale):
+            interval_count = (sample_count - offset - 1) // scale
+            if interval_count < 1:
+                continue
+            curve = data[offset : offset + (interval_count + 1) * scale : scale]
+            distance = float(np.sum(np.abs(np.diff(curve))))
+            normalized_length = (
+                distance
+                * (sample_count - 1)
+                / (scale * scale * interval_count)
+            )
+            offset_lengths.append(normalized_length)
+        if len(offset_lengths) != scale:
+            continue
+        mean_length = float(np.mean(offset_lengths))
+        if np.isfinite(mean_length) and mean_length > 0.0:
+            scales.append(float(scale))
+            mean_lengths.append(mean_length)
+    if len(mean_lengths) < 2:
+        return float("nan")
+    predictor = np.log(1.0 / np.asarray(scales))
+    response = np.log(np.asarray(mean_lengths))
+    centered_predictor = predictor - np.mean(predictor)
+    denominator = float(np.sum(centered_predictor**2))
+    if denominator == 0.0:
+        return float("nan")
+    slope = float(
+        np.sum(centered_predictor * (response - np.mean(response))) / denominator
+    )
+    return slope if np.isfinite(slope) else float("nan")
+
+
 __all__ = [
     "fisher_information",
+    "higuchi_fractal_dimension",
     "hjorth_complexity",
     "hjorth_mobility",
     "katz_fractal_dimension",

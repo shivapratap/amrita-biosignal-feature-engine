@@ -19,6 +19,7 @@ from amrita_biosignal_feature_engine import frequency_domain as frequency
 from amrita_biosignal_feature_engine import time_domain as time_features
 from amrita_biosignal_feature_engine.complexity import (
     fisher_information,
+    higuchi_fractal_dimension,
     hjorth_mobility,
     lempel_ziv_complexity,
 )
@@ -50,6 +51,7 @@ def main() -> None:
     mobility = hjorth_mobility(signal)
     lz_complexity = lempel_ziv_complexity(signal)
     fisher = fisher_information(signal)
+    higuchi = higuchi_fractal_dimension(signal)
     profile = sample_entropy_profile(signal)
 
     extractor = FeatureExtractor(ExtractorConfig(sampling_frequency, psd_config))
@@ -73,11 +75,12 @@ def main() -> None:
         mobility,
         lz_complexity,
         fisher,
+        higuchi,
     )
     assert all(math.isfinite(value) for value in direct_values)
     assert abs(peak_hz - 10.0) <= psd.bin_spacing
     assert profile.point_count > 0
-    assert len(DEFAULT_FEATURE_NAMES) == 32
+    assert len(DEFAULT_FEATURE_NAMES) == 33
     assert not result.failed_features
     assert len(batch.rows) == 2
     assert all(not row.failed_features for row in batch.rows)

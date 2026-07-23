@@ -170,6 +170,12 @@ _FEATURE_SPECS = (
         "Katz fractal dimension.",
     ),
     _spec(
+        "higuchi_fractal_dimension",
+        FeatureDomain.COMPLEXITY,
+        FeatureInput.SIGNAL,
+        "Higuchi multiscale curve-length fractal dimension.",
+    ),
+    _spec(
         "peak_frequency", FeatureDomain.FREQUENCY, FeatureInput.PSD, "Frequency of maximum PSD."
     ),
     _spec(

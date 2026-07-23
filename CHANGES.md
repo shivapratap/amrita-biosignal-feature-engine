@@ -32,6 +32,12 @@ before/after values, and a regression test.
   immutable default-parameter provenance, a hand-derived two-value spectrum,
   an independent Gram-eigenvalue oracle, and exact ordinary-case comparisons
   against the pinned corrected DIHC implementation.
+- Implemented Higuchi fractal dimension with configurable `k_max`, the frozen
+  minimum-length and degeneracy policies, immutable default-parameter
+  provenance, an independent literal-loop oracle, and pinned AntroPy and DIHC
+  comparisons. ABFE uses the exact OLS denominator; the reference packages add
+  a fixed `1e-9`, producing a documented maximum comparison delta below
+  `5e-9`.
 - Specified all eight time-domain fractal/complexity features mapped from DIHC
   Feature Manager plus a new Rosenstein largest Lyapunov exponent estimator
   before beginning their staged implementation.

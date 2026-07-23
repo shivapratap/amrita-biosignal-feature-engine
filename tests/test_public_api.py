@@ -35,6 +35,7 @@ def test_individual_feature_functions_are_not_flattened_at_top_level() -> None:
         "katz_fractal_dimension",
         "lempel_ziv_complexity",
         "fisher_information",
+        "higuchi_fractal_dimension",
     ):
         assert name not in abfe.__all__
         assert not hasattr(abfe, name)

@@ -14,6 +14,7 @@ from numpy.typing import NDArray
 
 from amrita_biosignal_feature_engine.complexity import (
     fisher_information,
+    higuchi_fractal_dimension,
     hjorth_complexity,
     hjorth_mobility,
     katz_fractal_dimension,
@@ -116,6 +117,32 @@ def test_fisher_translation_and_degeneracy_are_intentional_dihc_improvements() -
     )
     assert np.isnan(fisher_information(np.ones(20)))
     assert dihc_complexity.fisher_information(np.ones(20)) > 0.9
+
+
+@pytest.mark.parametrize("name", ["periodic", "white_noise", "chirp"])
+@pytest.mark.parametrize("k_max", [2, 5, 10])
+def test_higuchi_matches_antropy(name: str, k_max: int) -> None:
+    signal = required_signals()[name]
+    # AntroPy adds a fixed 1e-9 epsilon to the OLS denominator. ABFE uses the
+    # unmodified OLS equation, producing a small and bounded reference delta.
+    assert higuchi_fractal_dimension(signal, k_max=k_max) == pytest.approx(
+        antropy.higuchi_fd(signal, kmax=k_max), abs=5e-9
+    )
+
+
+@pytest.mark.parametrize("name", ["periodic", "white_noise", "chirp"])
+def test_default_higuchi_matches_pinned_dihc(name: str) -> None:
+    signal = required_signals()[name]
+    assert higuchi_fractal_dimension(signal) == pytest.approx(
+        dihc_complexity.higuchi_fd_feature(signal), abs=5e-9
+    )
+
+
+def test_constant_higuchi_degeneracy_matches_references() -> None:
+    signal = np.ones(80)
+    assert np.isnan(higuchi_fractal_dimension(signal))
+    assert np.isnan(antropy.higuchi_fd(signal, kmax=10))
+    assert np.isnan(dihc_complexity.higuchi_fd_feature(signal))
 
 
 @pytest.mark.parametrize("name", ["periodic", "white_noise", "chirp"])

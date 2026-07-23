@@ -9,6 +9,7 @@ import numpy as np
 import amrita_biosignal_feature_engine as abfe
 from amrita_biosignal_feature_engine.complexity import (
     fisher_information,
+    higuchi_fractal_dimension,
     hjorth_complexity,
     hjorth_mobility,
     katz_fractal_dimension,
@@ -75,6 +76,7 @@ def main() -> None:
         katz_fractal_dimension(short_signal),
         lempel_ziv_complexity(short_signal),
         fisher_information(short_signal),
+        higuchi_fractal_dimension(short_signal),
     )
     if not all(np.isfinite(value) for value in complexity_values):
         raise AssertionError("complexity smoke calculation failed")

@@ -94,6 +94,7 @@ def test_extract_complexity_features_through_registry_dispatch() -> None:
         "fisher_information",
         "petrosian_fractal_dimension",
         "katz_fractal_dimension",
+        "higuchi_fractal_dimension",
     )
     result = extractor.extract(signal, features=names)
     assert tuple(result.values) == names
@@ -103,6 +104,7 @@ def test_extract_complexity_features_through_registry_dispatch() -> None:
     assert result.provenance.feature_parameters == {
         "lempel_ziv_complexity": {"normalize": True},
         "fisher_information": {"order": 2, "delay": 1},
+        "higuchi_fractal_dimension": {"k_max": 10},
     }
 
 

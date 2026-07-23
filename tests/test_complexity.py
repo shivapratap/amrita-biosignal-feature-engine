@@ -8,6 +8,7 @@ from numpy.typing import ArrayLike
 
 from amrita_biosignal_feature_engine.complexity import (
     fisher_information,
+    higuchi_fractal_dimension,
     hjorth_complexity,
     hjorth_mobility,
     katz_fractal_dimension,
@@ -183,6 +184,64 @@ def test_katz_matches_independent_geometry_oracle() -> None:
     assert np.isnan(katz_fractal_dimension(np.array([0.0, 1.0])))
 
 
+def _literal_higuchi_oracle(signal: np.ndarray, *, k_max: int) -> float:
+    length = signal.size
+    scale_lengths: list[float] = []
+    for scale in range(1, k_max + 1):
+        offset_lengths: list[float] = []
+        for offset in range(scale):
+            intervals = (length - offset - 1) // scale
+            total = 0.0
+            for interval in range(1, intervals + 1):
+                right = offset + interval * scale
+                left = offset + (interval - 1) * scale
+                total += abs(signal[right] - signal[left])
+            offset_lengths.append(
+                total * (length - 1) / (scale**2 * intervals)
+            )
+        scale_lengths.append(sum(offset_lengths) / scale)
+    predictor = [np.log(1.0 / scale) for scale in range(1, k_max + 1)]
+    response = [np.log(value) for value in scale_lengths]
+    predictor_mean = sum(predictor) / len(predictor)
+    response_mean = sum(response) / len(response)
+    numerator = sum(
+        (x_value - predictor_mean) * (y_value - response_mean)
+        for x_value, y_value in zip(predictor, response, strict=True)
+    )
+    denominator = sum((value - predictor_mean) ** 2 for value in predictor)
+    return float(numerator / denominator)
+
+
+@pytest.mark.parametrize("k_max", [2, 3, 5, 10])
+def test_higuchi_matches_independent_literal_loop_oracle(k_max: int) -> None:
+    signal = np.random.default_rng(1000 + k_max).normal(size=80)
+    assert higuchi_fractal_dimension(signal, k_max=k_max) == pytest.approx(
+        _literal_higuchi_oracle(signal, k_max=k_max), abs=2e-15
+    )
+
+
+def test_higuchi_known_ramp_degeneracy_and_validation() -> None:
+    assert higuchi_fractal_dimension(np.arange(80.0)) == pytest.approx(1.0)
+    assert np.isnan(higuchi_fractal_dimension(np.ones(80)))
+    with pytest.raises(TypeError, match="k_max"):
+        higuchi_fractal_dimension(np.arange(80.0), k_max=True)
+    with pytest.raises(TypeError, match="k_max"):
+        higuchi_fractal_dimension(np.arange(80.0), k_max=2.5)  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="k_max"):
+        higuchi_fractal_dimension(np.arange(80.0), k_max=1)
+    with pytest.raises(ValueError, match="at least 21"):
+        higuchi_fractal_dimension(np.arange(20.0))
+    assert isinstance(higuchi_fractal_dimension(np.arange(21.0)), float)
+
+
+@pytest.mark.parametrize("scale,offset", [(0.5, 0.0), (3.0, 10.0), (-2.0, -4.0)])
+def test_higuchi_is_affine_invariant(scale: float, offset: float) -> None:
+    signal = np.random.default_rng(9753).normal(size=100)
+    assert higuchi_fractal_dimension(scale * signal + offset, k_max=8) == pytest.approx(
+        higuchi_fractal_dimension(signal, k_max=8), abs=2e-15
+    )
+
+
 @pytest.mark.parametrize(
     "function,minimum_length",
     [
@@ -222,6 +281,7 @@ def test_complexity_features_preserve_strict_signal_validation(
         hjorth_mobility,
         hjorth_complexity,
         fisher_information,
+        higuchi_fractal_dimension,
         petrosian_fractal_dimension,
         katz_fractal_dimension,
         lempel_ziv_complexity,

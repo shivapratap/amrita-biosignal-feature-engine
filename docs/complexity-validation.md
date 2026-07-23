@@ -4,8 +4,9 @@ This document freezes the v0.2.0 definitions for eight fractal/complexity
 features mapped from DIHC Feature Manager and one new
 largest-Lyapunov-exponent feature. Lempel–Ziv complexity, Hjorth mobility,
 Hjorth complexity, SVD-spectrum Fisher information, Petrosian fractal
-dimension, and Katz fractal dimension are implemented. The remaining three
-definitions are design specifications and are not yet implementation claims.
+dimension, Katz fractal dimension, and Higuchi fractal dimension are
+implemented. The remaining two definitions are design specifications and are
+not yet implementation claims.
 
 The nine planned public function names are:
 
@@ -307,7 +308,7 @@ constant, including sign reversal.
 
 ### Definition
 
-The function signature will be:
+The function signature is:
 
 ```text
 higuchi_fractal_dimension(signal, *, k_max=10)
@@ -322,7 +323,7 @@ least-squares slope of:
 log(L(k)) versus log(1 / k)
 ```
 
-Natural logarithms will be used; the fitted slope is independent of logarithm
+Natural logarithms are used; the fitted slope is independent of logarithm
 base. The result is dimensionless.
 
 ### Parameters and validation
@@ -346,6 +347,11 @@ nonzero constant, including sign reversal.
   [10.1016/0167-2789(88)90081-4](https://doi.org/10.1016/0167-2789(88)90081-4).
 - Pinned AntroPy `higuchi_fd` with the same `k_max`.
 - An independent literal-loop implementation of Higuchi's equations.
+
+AntroPy's private linear regression adds a fixed `1e-9` to the OLS
+denominator. ABFE uses the unmodified OLS equation above. Pinned AntroPy and
+DIHC comparisons therefore use a tight absolute tolerance of `5e-9`; the
+independent equation-level oracle is the full-precision authority.
 
 ## 8. Detrended fluctuation analysis
 
