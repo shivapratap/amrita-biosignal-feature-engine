@@ -4,22 +4,24 @@ Amrita BioSignal Feature Engine (ABFE) is a typed, domain-neutral Python
 package for reproducible feature extraction from pre-windowed, one-dimensional
 biomedical signals.
 
-ABFE computes time-domain, frequency-domain, and entropy features. It does not
-segment, filter, round, or infer physiological frequency bands. Those choices
-remain explicit responsibilities of the caller's signal-processing pipeline.
+ABFE computes time-domain, frequency-domain, entropy, and
+fractal/complexity features. It does not segment, filter, round, or infer
+physiological frequency bands. Those choices remain explicit responsibilities
+of the caller's signal-processing pipeline.
 
-> The ABFE `v0.1.0` release candidate is frozen. Once the GitHub Release is
-> published, install its versioned artifact rather than a floating branch in
-> research pipelines.
+The latest stable GitHub Release is `v0.1.0`. The repository's development
+source is preparing `v0.2.0` and should not replace a versioned release
+artifact in a reproducible research pipeline.
 
 ## Installation
 
 ABFE is currently installed from GitHub Releases:
 
 1. Open the [ABFE Releases page](https://github.com/shivapratap/amrita-biosignal-feature-engine/releases).
-2. Select the release you want to install.
-3. Under **Assets**, download the file whose name ends in `.whl` (for v0.1.0,
-   this is `amrita_biosignal_feature_engine-0.1.0-py3-none-any.whl`).
+2. Select the version you want.
+3. Under **Assets**, download the file ending in `.whl`. For example, the
+   v0.1.0 wheel is
+   `amrita_biosignal_feature_engine-0.1.0-py3-none-any.whl`.
 4. Open a terminal in the folder containing the downloaded file and run:
 
 ```bash
@@ -47,6 +49,7 @@ from amrita_biosignal_feature_engine import (
     BandPowerRequest,
     ExtractorConfig,
     FeatureExtractor,
+    LargestLyapunovRequest,
     WelchPSDConfig,
 )
 
@@ -67,12 +70,21 @@ result = extractor.extract(
     features=(
         "root_mean_square",
         "approximate_entropy",
+        "lempel_ziv_complexity",
         "spectral_entropy",
         BandPowerRequest("power_8_12_hz", (8.0, 12.0)),
         BandPowerRatioRequest(
             "power_8_12_over_20_30",
             (8.0, 12.0),
             (20.0, 30.0),
+        ),
+        LargestLyapunovRequest(
+            "largest_lyapunov_s_inverse",
+            embedding_dimension=3,
+            delay_samples=2,
+            minimum_separation_samples=10,
+            fit_start=0,
+            fit_end=6,
         ),
     ),
 )
@@ -85,17 +97,28 @@ print(result.provenance)
 
 All requested frequency features share one explicitly configured PSD. The
 result records the PSD configuration, achieved bin spacing, segment count,
-sampling frequency, signal length, and package version.
+resolved feature parameters, sampling frequency, signal length, and package
+version.
+
+`LargestLyapunovRequest` has no scientific defaults. Its parameters above are
+an executable API example, not general-purpose recommendations. Choose them
+for the signal and study design; a positive estimate alone does not establish
+deterministic chaos.
 
 ## Implemented features
 
-The immutable scalar registry contains 26 ordered features:
+The immutable scalar registry contains 35 ordered features. The 34 features
+with canonical defaults are included in `DEFAULT_FEATURE_NAMES`:
 
 - Time domain: minimum, maximum, sum, mean, median, population standard
   deviation and variance, excess kurtosis, skewness, mean absolute value, RMS,
   peak-to-peak amplitude, integrated absolute value, waveform length,
   zero-crossing count, and slope-sign-change count.
 - Entropy: approximate, permutation, fuzzy, distribution, and SVD entropy.
+- Complexity: median-binarized Lempel–Ziv complexity, Hjorth mobility and
+  complexity, SVD-spectrum Fisher information, Petrosian fractal dimension,
+  Katz and Higuchi fractal dimensions, detrended fluctuation analysis, and the
+  request-only Rosenstein largest Lyapunov exponent.
 - Frequency domain: peak, mean, and median frequency; SEF95; and spectral
   entropy.
 
@@ -103,6 +126,9 @@ Caller-named band power, relative band power, and directed band-power ratios
 are available through explicit request objects. The structured sample-entropy
 profile remains a direct function rather than being collapsed into an invented
 scalar registry value.
+
+Largest-Lyapunov extraction requires `LargestLyapunovRequest`; ABFE does not
+invent embedding, delay, temporal-exclusion, or fit-region defaults.
 
 ## Public API at a glance
 
@@ -112,10 +138,11 @@ explicit.
 
 | Import path | Public API |
 | --- | --- |
-| `amrita_biosignal_feature_engine` | `FeatureExtractor`, `ExtractorConfig`, `BandPowerRequest`, `BandPowerRatioRequest`, `ExtractionResult`, `BatchExtractionResult`, `ExtractionProvenance`, `WelchPSDConfig`, `MultitaperPSDConfig`, `PSDResult`, `compute_psd`, `__version__` |
+| `amrita_biosignal_feature_engine` | `FeatureExtractor`, `ExtractorConfig`, `BandPowerRequest`, `BandPowerRatioRequest`, `LargestLyapunovRequest`, `ExtractionResult`, `BatchExtractionResult`, `ExtractionProvenance`, `WelchPSDConfig`, `MultitaperPSDConfig`, `PSDResult`, `compute_psd`, `__version__` |
 | `amrita_biosignal_feature_engine.time_domain` | `minimum`, `maximum`, `sum_value`, `mean`, `median`, `standard_deviation`, `variance`, `kurtosis`, `skewness`, `mean_absolute_value`, `root_mean_square`, `peak_to_peak`, `integrated_absolute_value`, `waveform_length`, `zero_crossing_count`, `slope_sign_change_count` |
 | `amrita_biosignal_feature_engine.frequency_domain` | `peak_frequency`, `mean_frequency`, `median_frequency`, `spectral_edge_frequency`, `spectral_entropy`, `band_power`, `band_power_ratio` |
 | `amrita_biosignal_feature_engine.entropy` | `approximate_entropy`, `permutation_entropy`, `fuzzy_entropy`, `distribution_entropy`, `svd_entropy`, `sample_entropy_profile`, `SampleEntropyProfile` |
+| `amrita_biosignal_feature_engine.complexity` | `lempel_ziv_complexity`, `hjorth_mobility`, `hjorth_complexity`, `fisher_information`, `petrosian_fractal_dimension`, `katz_fractal_dimension`, `higuchi_fractal_dimension`, `detrended_fluctuation_analysis`, `largest_lyapunov_exponent` |
 | `amrita_biosignal_feature_engine.feature_registry` | `FEATURE_REGISTRY`, `DEFAULT_FEATURE_NAMES`, `FeatureSpec`, `FeatureDomain`, `FeatureInput`, `get_feature_spec`, `select_features` |
 | `amrita_biosignal_feature_engine.diagnostics` | `ABFEWarning`, `FrequencyResolutionWarning`, `DiagnosticSeverity`, `DiagnosticCode`, `FeatureDiagnostic` |
 | `amrita_biosignal_feature_engine.validation` | `validate_signal`, `validate_nonnegative_threshold` |
@@ -126,7 +153,8 @@ PSD to be reused without hidden spectral defaults.
 
 See the [complete API reference](docs/api-reference.md),
 [PSD definitions](docs/psd.md), [validation contract](docs/validation.md),
-[entropy validation](docs/entropy-validation.md), and
+[entropy validation](docs/entropy-validation.md),
+[complexity validation](docs/complexity-validation.md), and
 [API design](docs/api-design.md) for parameters, return values, exceptions,
 diagnostics, and numerical definitions.
 
@@ -140,8 +168,8 @@ python examples/api_smoke_test.py
 ```
 
 The script exercises the public extractor, direct time-domain, PSD,
-frequency-domain, entropy, registry, and batch APIs. A successful run ends
-with `ABFE API smoke test passed.`
+frequency-domain, entropy, complexity, registry, and batch APIs. A successful
+run ends with `ABFE API smoke test passed.`
 
 ## Failure and degeneracy policy
 
@@ -159,8 +187,9 @@ not perform reporting-time rounding.
 
 The offline suite covers definitions, invariants, invalid inputs, degeneracy,
 immutability, dispatch, diagnostics, and provenance. A separate CI job compares
-entropy and multitaper behavior against pinned external authorities, including
-AntroPy, MNE, `sampen-profile`, and the relevant DIHC reference implementations.
+entropy, complexity, and multitaper behavior against pinned external
+authorities, including AntroPy, MNE, `sampen-profile`, and the relevant DIHC
+reference implementations.
 External authorities are validation dependencies only and are not installed at
 runtime.
 
@@ -171,8 +200,11 @@ v0.1.0 development baseline and its limitations are documented in
 [docs/performance-baseline.md](docs/performance-baseline.md). Pairwise-distance
 entropy functions and the structured sample-entropy profile have quadratic
 time and/or memory characteristics and deserve particular care for long
-windows. Performance redesign is planned for v0.2.0; v0.1.0 prioritizes the
-currently validated numerical definitions.
+windows. The v0.2.0 complexity work replaces the former quadratic Python LZ76
+history scan with a validated approximately linear-scaling suffix-automaton
+parser; its reproducible evidence is described in
+[benchmarks/README.md](benchmarks/README.md). Other numerical algorithms retain
+their validated definitions unless separately redesigned and revalidated.
 
 ## Development
 

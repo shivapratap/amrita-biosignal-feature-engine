@@ -12,6 +12,7 @@ from .extractor import (
     ExtractionResult,
     ExtractorConfig,
     FeatureExtractor,
+    LargestLyapunovRequest,
 )
 from .psd import MultitaperPSDConfig, PSDResult, WelchPSDConfig, compute_psd
 
@@ -28,6 +29,7 @@ __all__ = [
     "ExtractionResult",
     "ExtractorConfig",
     "FeatureExtractor",
+    "LargestLyapunovRequest",
     "MultitaperPSDConfig",
     "PSDResult",
     "WelchPSDConfig",

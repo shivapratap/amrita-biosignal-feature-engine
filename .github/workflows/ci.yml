@@ -33,9 +33,13 @@ jobs:
         run: python -m mypy --no-incremental --python-version 3.10
       - if: matrix.python == '3.13'
         run: python -m mypy --no-incremental --python-version 3.13
-      - name: Reject tracked generated caches
+      - name: Reject tracked generated or workspace-only files
         run: |
-          test -z "$(git ls-files '.mypy_cache/**' '.pytest_cache/**' '.ruff_cache/**' '**/__pycache__/**')"
+          test -z "$(git ls-files \
+            '.mypy_cache/**' '.pytest_cache/**' '.ruff_cache/**' \
+            '**/__pycache__/**' '*.pyc' '*.pyo' '*.whl' '*.tar.gz' \
+            'build/**' 'dist/**' '.venv/**' '.DS_Store' 'AGENTS.md' \
+            '*Audit*Report*')"
 
   wheel:
     name: Build and inspect distributions
@@ -75,7 +79,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: python -m pip install --upgrade pip
-      - run: python -m pip install -e ".[dev]" "antropy==0.2.2" "mne==1.12.1"
+      - run: python -m pip install -e ".[dev]" "antropy==0.2.2" "mne==1.12.1" "nolds==0.6.2"
       - name: Install pinned sampen-profile authority
         run: python -m pip install "git+https://github.com/shivapratap/sampen-profile.git@263b72f7b906208241291c0579e8ec103fb52d79"
       - name: Install pinned DIHC comparison reference

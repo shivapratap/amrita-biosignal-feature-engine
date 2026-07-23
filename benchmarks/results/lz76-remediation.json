@@ -1,0 +1,71 @@
+{
+  "schema_version": 2,
+  "source_commits": {
+    "previous_parser": "de44ea7de5948fabe1c696e8eb3d0d6ecdac2b10",
+    "suffix_automaton_remediation": "e02f88e84959f016702c2f210110af64478a2d8c"
+  },
+  "environment": {
+    "timestamp_utc": "2026-07-23T06:32:07.484809+00:00",
+    "python": "3.13.9",
+    "numpy": "2.5.1",
+    "abfe": "0.2.0.dev0",
+    "platform": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+    "machine": "arm64"
+  },
+  "method": {
+    "seed_rule": "20260723 + signal length",
+    "signal_generator": "NumPy default_rng standard_normal",
+    "binarization": "signal >= NumPy median; uint8",
+    "binary_digest": "SHA-256 of contiguous uint8 bytes",
+    "clock": "time.perf_counter",
+    "clock_resolution_seconds": 4.166666666666666e-08,
+    "warmups_per_parser_and_size": 1,
+    "repeats": 7,
+    "statistic": "median wall time of one parser call",
+    "measurement_order": "previous parser, then suffix automaton",
+    "compatibility": "exact phrase-count equality required before timing",
+    "peak_memory": "tracemalloc peak Python allocated bytes for one parser call after gc.collect; excludes input sequence and native RSS"
+  },
+  "results": [
+    {
+      "size": 512,
+      "binary_sha256": "919c49bc4a6a4d2ffd2ab1fa55d1b50d5956414221613b6dbee86766b0d15dcc",
+      "phrase_count": 62,
+      "previous_median_seconds": 0.003729666001163423,
+      "suffix_automaton_median_seconds": 0.0004215420049149543,
+      "speedup": 8.847673441027258,
+      "previous_peak_allocated_bytes": 152,
+      "suffix_automaton_peak_allocated_bytes": 205044
+    },
+    {
+      "size": 1024,
+      "binary_sha256": "4a3b3f410df8f09a0af2fa42ede0f52813145dbcbe87614c849528d65db28b71",
+      "phrase_count": 110,
+      "previous_median_seconds": 0.013500875007594004,
+      "suffix_automaton_median_seconds": 0.0008273750136140734,
+      "speedup": 16.317721450905992,
+      "previous_peak_allocated_bytes": 152,
+      "suffix_automaton_peak_allocated_bytes": 444560
+    },
+    {
+      "size": 2048,
+      "binary_sha256": "54c2bfe87b65f91b2af52f5b373db0bbecbf24dcc9a07813348c9633987b2306",
+      "phrase_count": 198,
+      "previous_median_seconds": 0.051518207998014987,
+      "suffix_automaton_median_seconds": 0.0017336670134682208,
+      "speedup": 29.7163224528061,
+      "previous_peak_allocated_bytes": 152,
+      "suffix_automaton_peak_allocated_bytes": 909180
+    },
+    {
+      "size": 4096,
+      "binary_sha256": "0ebe62ee69fa9b50eee3c9c73f0c1491514804cb62da3132ba949336edf730eb",
+      "phrase_count": 354,
+      "previous_median_seconds": 0.19022150000091642,
+      "suffix_automaton_median_seconds": 0.00376662501366809,
+      "speedup": 50.50184165151899,
+      "previous_peak_allocated_bytes": 184,
+      "suffix_automaton_peak_allocated_bytes": 1857188
+    }
+  ]
+}

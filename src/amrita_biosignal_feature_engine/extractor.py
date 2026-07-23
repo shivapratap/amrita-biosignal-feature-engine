@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Callable, Iterable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import cache
 from importlib.metadata import PackageNotFoundError, version
 from numbers import Real
@@ -15,6 +15,18 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 from . import time_domain
+from .complexity import (
+    _resolve_dfa_scales,
+    detrended_fluctuation_analysis,
+    fisher_information,
+    higuchi_fractal_dimension,
+    hjorth_complexity,
+    hjorth_mobility,
+    katz_fractal_dimension,
+    largest_lyapunov_exponent,
+    lempel_ziv_complexity,
+    petrosian_fractal_dimension,
+)
 from .diagnostics import (
     DiagnosticCode,
     DiagnosticSeverity,
@@ -113,6 +125,42 @@ class BandPowerRatioRequest:
 
 
 @dataclass(frozen=True, slots=True)
+class LargestLyapunovRequest:
+    """Explicit Rosenstein largest-Lyapunov-exponent output request."""
+
+    output_name: str
+    embedding_dimension: int
+    delay_samples: int
+    minimum_separation_samples: int
+    fit_start: int
+    fit_end: int
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "output_name", _validate_output_name(self.output_name))
+        for name, value, minimum in (
+            ("embedding_dimension", self.embedding_dimension, 2),
+            ("delay_samples", self.delay_samples, 1),
+            (
+                "minimum_separation_samples",
+                self.minimum_separation_samples,
+                0,
+            ),
+            ("fit_start", self.fit_start, 0),
+            ("fit_end", self.fit_end, 0),
+        ):
+            if isinstance(value, bool | np.bool_) or not isinstance(
+                value, int | np.integer
+            ):
+                raise TypeError(f"{name} must be an integer")
+            resolved = int(value)
+            if resolved < minimum:
+                raise ValueError(f"{name} must be at least {minimum}")
+            object.__setattr__(self, name, resolved)
+        if self.fit_end < self.fit_start + 3:
+            raise ValueError("fit_end must be at least fit_start + 3")
+
+
+@dataclass(frozen=True, slots=True)
 class ExtractorConfig:
     """Immutable sampling and PSD configuration for feature extraction."""
 
@@ -144,6 +192,9 @@ class ExtractionProvenance:
     psd_bin_spacing: float | None = None
     psd_effective_bandwidth: float | None = None
     psd_segment_count: int | None = None
+    feature_parameters: Mapping[str, Mapping[str, object]] = field(
+        default_factory=dict
+    )
 
     def __post_init__(self) -> None:
         if not self.package_version:
@@ -164,6 +215,40 @@ class ExtractionProvenance:
         if len(set(requested)) != len(requested):
             raise ValueError("requested_features must be unique")
         object.__setattr__(self, "requested_features", requested)
+        copied_parameters: dict[str, Mapping[str, object]] = {}
+        for output_name, parameters in self.feature_parameters.items():
+            if output_name not in requested:
+                raise ValueError(
+                    "feature_parameters keys must identify requested features"
+                )
+            if not isinstance(parameters, Mapping):
+                raise TypeError("feature parameter records must be mappings")
+            copied: dict[str, object] = {}
+            for name, value in parameters.items():
+                if not isinstance(name, str) or not name:
+                    raise ValueError("feature parameter names must be nonempty strings")
+                if isinstance(value, tuple):
+                    if any(
+                        not (
+                            isinstance(item, str | bool | int | float)
+                            or item is None
+                        )
+                        for item in value
+                    ):
+                        raise TypeError(
+                            "feature parameter tuples must contain scalar values"
+                        )
+                    copied[name] = tuple(value)
+                elif isinstance(value, str | bool | int | float) or value is None:
+                    copied[name] = value
+                else:
+                    raise TypeError(
+                        "feature parameter values must be scalar values or tuples"
+                    )
+            copied_parameters[output_name] = MappingProxyType(copied)
+        object.__setattr__(
+            self, "feature_parameters", MappingProxyType(copied_parameters)
+        )
 
         metadata = (
             self.psd_bin_spacing,
@@ -252,14 +337,16 @@ class BatchExtractionResult:
         return tuple(self.rows[0].values) if self.rows else ()
 
 
-FeatureRequest: TypeAlias = str | BandPowerRequest | BandPowerRatioRequest
+FeatureRequest: TypeAlias = (
+    str | BandPowerRequest | BandPowerRatioRequest | LargestLyapunovRequest
+)
 
 
 @dataclass(frozen=True, slots=True)
 class _ResolvedFeature:
     output_name: str
     registered_name: str | None
-    request: BandPowerRequest | BandPowerRatioRequest | None
+    request: BandPowerRequest | BandPowerRatioRequest | LargestLyapunovRequest | None
     input_kind: FeatureInput
 
 
@@ -286,6 +373,14 @@ _SIGNAL_DISPATCH: Mapping[str, ScalarSignalFunction] = MappingProxyType(
         "fuzzy_entropy": fuzzy_entropy,
         "distribution_entropy": distribution_entropy,
         "svd_entropy": svd_entropy,
+        "lempel_ziv_complexity": lempel_ziv_complexity,
+        "hjorth_mobility": hjorth_mobility,
+        "hjorth_complexity": hjorth_complexity,
+        "fisher_information": fisher_information,
+        "petrosian_fractal_dimension": petrosian_fractal_dimension,
+        "katz_fractal_dimension": katz_fractal_dimension,
+        "higuchi_fractal_dimension": higuchi_fractal_dimension,
+        "detrended_fluctuation_analysis": detrended_fluctuation_analysis,
     }
 )
 
@@ -304,7 +399,12 @@ _PSD_DISPATCH: Mapping[str, ScalarPSDFunction] = MappingProxyType(
     }
 )
 
-if set(_SIGNAL_DISPATCH) | set(_PSD_DISPATCH) != set(FEATURE_REGISTRY):
+_REQUEST_DISPATCH_NAMES = frozenset({"largest_lyapunov_exponent"})
+
+if (
+    set(_SIGNAL_DISPATCH) | set(_PSD_DISPATCH) | _REQUEST_DISPATCH_NAMES
+    != set(FEATURE_REGISTRY)
+):
     raise RuntimeError("extractor dispatch and feature registry are inconsistent")
 
 
@@ -324,17 +424,90 @@ def _resolve_features(features: Iterable[FeatureRequest]) -> tuple[_ResolvedFeat
     for item in features:
         if isinstance(item, str):
             spec = get_feature_spec(item)
+            if spec.request_required:
+                raise ValueError(f"feature {item!r} requires an explicit request object")
             resolved.append(_ResolvedFeature(item, item, None, spec.input_kind))
         elif isinstance(item, BandPowerRequest | BandPowerRatioRequest):
             resolved.append(_ResolvedFeature(item.output_name, None, item, FeatureInput.PSD))
+        elif isinstance(item, LargestLyapunovRequest):
+            resolved.append(
+                _ResolvedFeature(
+                    item.output_name,
+                    "largest_lyapunov_exponent",
+                    item,
+                    FeatureInput.SIGNAL,
+                )
+            )
         else:
             raise TypeError(
-                "features must contain strings, BandPowerRequest, or BandPowerRatioRequest"
+                "features must contain strings or supported feature request objects"
             )
     output_names = tuple(item.output_name for item in resolved)
     if len(set(output_names)) != len(output_names):
         raise ValueError("requested output names must be unique")
     return tuple(resolved)
+
+
+def _feature_parameters(
+    resolved: tuple[_ResolvedFeature, ...],
+    *,
+    signal_length: int | None,
+    sampling_frequency: float,
+) -> Mapping[str, Mapping[str, object]]:
+    parameters: dict[str, Mapping[str, object]] = {}
+    for item in resolved:
+        if item.registered_name == "lempel_ziv_complexity":
+            parameters[item.output_name] = {"normalize": True}
+        elif item.registered_name == "fisher_information":
+            parameters[item.output_name] = {"order": 2, "delay": 1}
+        elif item.registered_name == "higuchi_fractal_dimension":
+            parameters[item.output_name] = {"k_max": 10}
+        elif item.registered_name == "detrended_fluctuation_analysis":
+            dfa_parameters: dict[str, object] = {
+                "minimum_scale": 4,
+                "maximum_scale_fraction": 0.1,
+                "scale_ratio": 1.2,
+                "detrend_order": 1,
+            }
+            if signal_length is not None and signal_length >= 50:
+                dfa_parameters["scales"] = _resolve_dfa_scales(
+                    signal_length,
+                    scales=None,
+                    minimum_scale=4,
+                    maximum_scale_fraction=0.1,
+                    scale_ratio=1.2,
+                    detrend_order=1,
+                )
+            parameters[item.output_name] = dfa_parameters
+        elif isinstance(item.request, LargestLyapunovRequest):
+            parameters[item.output_name] = {
+                "sampling_frequency": sampling_frequency,
+                "embedding_dimension": item.request.embedding_dimension,
+                "delay_samples": item.request.delay_samples,
+                "minimum_separation_samples": (
+                    item.request.minimum_separation_samples
+                ),
+                "fit_start": item.request.fit_start,
+                "fit_end": item.request.fit_end,
+                "output_units": "s^-1",
+            }
+        elif isinstance(item.request, BandPowerRequest):
+            parameters[item.output_name] = {
+                "band": item.request.band,
+                "relative": item.request.relative,
+                "output_units": (
+                    "dimensionless"
+                    if item.request.relative
+                    else "signal_units_squared"
+                ),
+            }
+        elif isinstance(item.request, BandPowerRatioRequest):
+            parameters[item.output_name] = {
+                "numerator_band": item.request.numerator_band,
+                "denominator_band": item.request.denominator_band,
+                "output_units": "dimensionless",
+            }
+    return parameters
 
 
 def _resolution_diagnostics(
@@ -423,6 +596,23 @@ class FeatureExtractor:
             raise RuntimeError("resolved PSD feature has no dispatch name")
         return _PSD_DISPATCH[item.registered_name](psd)
 
+    def _compute_signal_feature(
+        self, item: _ResolvedFeature, data: FloatArray
+    ) -> float:
+        if isinstance(item.request, LargestLyapunovRequest):
+            return largest_lyapunov_exponent(
+                data,
+                sampling_frequency=self.config.sampling_frequency,
+                embedding_dimension=item.request.embedding_dimension,
+                delay_samples=item.request.delay_samples,
+                minimum_separation_samples=item.request.minimum_separation_samples,
+                fit_start=item.request.fit_start,
+                fit_end=item.request.fit_end,
+            )
+        if item.registered_name is None:
+            raise RuntimeError("resolved signal feature has no dispatch name")
+        return _SIGNAL_DISPATCH[item.registered_name](data)
+
     def extract(
         self,
         signal: ArrayLike,
@@ -466,8 +656,7 @@ class FeatureExtractor:
                 with warnings.catch_warnings(record=True) as captured:
                     warnings.simplefilter("always", FrequencyResolutionWarning)
                     if item.input_kind is FeatureInput.SIGNAL:
-                        assert item.registered_name is not None
-                        value = float(_SIGNAL_DISPATCH[item.registered_name](data))
+                        value = float(self._compute_signal_feature(item, data))
                     else:
                         assert psd is not None
                         value = float(self._compute_psd_feature(item, psd))
@@ -503,6 +692,11 @@ class FeatureExtractor:
             psd_bin_spacing=psd.bin_spacing if psd is not None else None,
             psd_effective_bandwidth=psd.effective_bandwidth if psd is not None else None,
             psd_segment_count=psd.segment_count if psd is not None else None,
+            feature_parameters=_feature_parameters(
+                resolved,
+                signal_length=int(data.size),
+                sampling_frequency=self.config.sampling_frequency,
+            ),
         )
         return ExtractionResult(values, tuple(diagnostics), provenance)
 
@@ -534,6 +728,11 @@ class FeatureExtractor:
             signal_length,
             self.config.sampling_frequency,
             names,
+            feature_parameters=_feature_parameters(
+                resolved,
+                signal_length=signal_length,
+                sampling_frequency=self.config.sampling_frequency,
+            ),
         )
         return ExtractionResult(values, diagnostics, provenance)
 
@@ -564,4 +763,5 @@ __all__ = [
     "ExtractionResult",
     "ExtractorConfig",
     "FeatureExtractor",
+    "LargestLyapunovRequest",
 ]

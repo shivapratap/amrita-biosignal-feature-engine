@@ -5,7 +5,116 @@ before/after values, and a regression test.
 
 ## Unreleased
 
-No changes yet.
+### Fractal and complexity design
+
+- Prepared v0.2.0 Release-Readiness Batch D locally: generalized the read-only
+  manual artifact rehearsal to the declared candidate version, added separate
+  wheel/source fresh-install smoke tests to rehearsal and tag paths, restricted
+  publication to a matching stable three-component version tag, and broadened
+  CI rejection of tracked generated or workspace-only files. Remote rehearsal
+  remains separately approved work.
+- The local Batch D matrix passed 558 offline tests on Python 3.10 with NumPy
+  1.24.4/SciPy 1.10.1, all 433 pinned reference tests in a clean Python 3.12
+  environment, and independent wheel/source installation smoke tests on Python
+  3.13. Corrected nine test-helper annotations from bare `np.ndarray` to
+  `NDArray[np.float64]` so strict mypy is consistent at the Python 3.10 target;
+  this has no runtime or numerical effect.
+- Completed v0.2.0 Release-Readiness Batch C evidence work: added a
+  reproducible LZ76 before/after generator with exact source commits, input
+  digests, timing methodology, installed-package metadata, and peak Python
+  allocation measurements; separated the Lyapunov inverse-seconds
+  sampling-frequency rule into an explicit regression test.
+- Completed v0.2.0 Release-Readiness Batch B: synchronized the stable/development
+  installation guidance, 35-entry registry catalogue, all nine complexity
+  signatures and degeneracy contracts, request-only Lyapunov example, public
+  API policy, and executable smoke documentation.
+- Completed v0.2.0 Release-Readiness Batch A: classified every feature-branch
+  change against the published v0.1.0 commit, confirmed the nine-feature scope
+  and exact external-reference pins, found no tracked generated or credential
+  material, and established a non-destructive workspace-only policy for the
+  imported auditor `AGENTS.md`.
+- Closed the complexity implementation phase after focused independent
+  re-audit of remediation commit `e02f88e`: duplicate-embedding Lyapunov
+  selection matched the full-distance oracle within approximately `1.1e-16`,
+  all 131,068 binary sequences through length 16 matched the independent LZ76
+  parser, and no release-blocking finding remained.
+- Added the staged v0.2.0 integration and release-readiness design covering
+  repository hygiene, public documentation, evidence closure, CI/artifacts,
+  final independent audit, version freeze, integration, and publication.
+- Corrected Rosenstein nearest-neighbor selection to exclude exact
+  zero-distance duplicate embeddings before choosing the nearest admissible
+  neighbor. Before the correction, the audited repeated-pattern input selected
+  zero pairs and returned `NaN`; afterward it selects the available nonzero
+  neighbors and returns `0.23969930756318522 s^-1`, matching the independent
+  full-distance-matrix oracle.
+- Replaced the quadratic Python-level LZ76 history scan with an
+  earliest-occurrence suffix-automaton parser. The phrase definition and
+  numerical results are unchanged; exhaustive binary-sequence and pinned
+  AntroPy/DIHC comparisons remain the compatibility gates. Added reproducible
+  512–4,096-sample benchmark cases to expose parser scaling. Same-machine
+  installed-artifact median timings improved from 3.73–190.22 ms to
+  0.42–3.77 ms across those sizes, an 8.8–50.5× speedup. Peak traced Python
+  allocations for the linear-size automaton rose from about 200 KiB at 512
+  samples to 1.81 MiB at 4,096 samples.
+- Opened the v0.2.0 development cycle at version `0.2.0.dev0`.
+- Implemented the first correctness batch: Hjorth mobility, Hjorth complexity,
+  Petrosian fractal dimension, and Katz fractal dimension, with strict shared
+  validation, explicit degeneracy behavior, registry/extractor dispatch, and
+  installed-artifact smoke coverage.
+- Added independent formula oracles, invariance and boundary tests, and pinned
+  AntroPy comparisons. Petrosian zero-derivative plateaus deliberately remove
+  zero slopes before transition counting; this documented ABFE policy differs
+  from AntroPy's direct `signbit` transition count.
+- Implemented median-binarized Lempel–Ziv 1976 exhaustive-history complexity
+  with raw and normalized outputs, deterministic median ties, constant-signal
+  degeneracy, published hand-parsed examples, and pinned AntroPy comparisons.
+- Added immutable per-output feature-parameter provenance. Name-only
+  Lempel–Ziv extraction records its canonical `normalize=True` default, while
+  explicit band requests record their resolved bands, relative-power mode, and
+  output units.
+- Strengthened Lempel–Ziv validation with a structurally independent
+  exhaustive-history parser, all 8,188 binary sequences of lengths 2 through
+  12, and exact raw-count comparisons against DIHC Feature Manager commit
+  `852a79d0178eb762aeaf81960820043365a059c3`.
+- Implemented mean-centered SVD-spectrum Fisher information with configurable
+  embedding order and delay, numerical rank-zero/rank-one `NaN` handling,
+  immutable default-parameter provenance, a hand-derived two-value spectrum,
+  an independent Gram-eigenvalue oracle, and exact ordinary-case comparisons
+  against the pinned corrected DIHC implementation.
+- Implemented Higuchi fractal dimension with configurable `k_max`, the frozen
+  minimum-length and degeneracy policies, immutable default-parameter
+  provenance, an independent literal-loop oracle, and pinned AntroPy and DIHC
+  comparisons. ABFE uses the exact OLS denominator; the reference packages add
+  a fixed `1e-9`, producing a documented maximum comparison delta below
+  `5e-9`.
+- Implemented detrended fluctuation analysis with explicit or deterministic
+  automatic scales, polynomial detrending, exact OLS regression, strict
+  scale/segment validation, and immutable provenance containing the resolved
+  scale tuple and canonical generator settings.
+- Added an independent Vandermonde least-squares segmentation oracle,
+  seeded white-noise and random-walk checks, affine invariance, and equivalent
+  pinned AntroPy/DIHC comparisons. For 50–57 samples, ABFE deliberately uses
+  two scales instead of reproducing the references' false one-point `0.0`.
+- Implemented the Rosenstein largest Lyapunov exponent with fully explicit
+  reconstruction, temporal-exclusion, half-open fit-region, and sampling-rate
+  parameters; no scientific defaults or positive-slope threshold are inferred.
+- Added the frozen request-only registry policy, `LargestLyapunovRequest`,
+  inverse-seconds output, complete immutable provenance, conservative
+  minimum-length validation, and undefined-neighbor/divergence handling.
+- Validated against an independent full-distance-matrix oracle, seeded
+  periodic, quasiperiodic, logistic-map, and RK4 Lorenz trajectories, and
+  pinned `nolds 0.6.2`; both Rosenstein implementations recover the logistic
+  map's theoretical `ln(2)` exponent within `0.01`.
+- Specified all eight time-domain fractal/complexity features mapped from DIHC
+  Feature Manager plus a new Rosenstein largest Lyapunov exponent estimator
+  before beginning their staged implementation.
+- Froze proposed formulas, parameters, defaults, units, minimum-length rules,
+  undefined-value behavior, invariances, provenance requirements, and
+  independent reference-validation authorities in
+  `docs/complexity-validation.md`.
+- Retained ABFE's strict policy: malformed inputs and parameters raise,
+  mathematically undefined estimates return `NaN`, and no failed computation
+  is replaced with a false `0.0`.
 
 ## 0.1.0 - 2026-07-23
 

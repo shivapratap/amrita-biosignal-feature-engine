@@ -11,12 +11,21 @@ from amrita_biosignal_feature_engine import (
     BandPowerRequest,
     ExtractorConfig,
     FeatureExtractor,
+    LargestLyapunovRequest,
     WelchPSDConfig,
     __version__,
     compute_psd,
 )
 from amrita_biosignal_feature_engine import frequency_domain as frequency
 from amrita_biosignal_feature_engine import time_domain as time_features
+from amrita_biosignal_feature_engine.complexity import (
+    detrended_fluctuation_analysis,
+    fisher_information,
+    higuchi_fractal_dimension,
+    hjorth_mobility,
+    largest_lyapunov_exponent,
+    lempel_ziv_complexity,
+)
 from amrita_biosignal_feature_engine.entropy import (
     approximate_entropy,
     permutation_entropy,
@@ -42,6 +51,20 @@ def main() -> None:
     power_8_12_hz = frequency.band_power(psd, band=(8.0, 12.0))
     approximate = approximate_entropy(signal)
     permutation = permutation_entropy(signal, normalize=True)
+    mobility = hjorth_mobility(signal)
+    lz_complexity = lempel_ziv_complexity(signal)
+    fisher = fisher_information(signal)
+    higuchi = higuchi_fractal_dimension(signal)
+    dfa = detrended_fluctuation_analysis(signal)
+    lyapunov = largest_lyapunov_exponent(
+        signal,
+        sampling_frequency=sampling_frequency,
+        embedding_dimension=3,
+        delay_samples=2,
+        minimum_separation_samples=10,
+        fit_start=0,
+        fit_end=6,
+    )
     profile = sample_entropy_profile(signal)
 
     extractor = FeatureExtractor(ExtractorConfig(sampling_frequency, psd_config))
@@ -52,15 +75,28 @@ def main() -> None:
         "spectral_entropy",
         BandPowerRequest("power_8_12_hz", (8.0, 12.0)),
         BandPowerRatioRequest("power_8_12_over_20_30", (8.0, 12.0), (20.0, 30.0)),
+        LargestLyapunovRequest("largest_lyapunov_s_inverse", 3, 2, 10, 0, 6),
     )
     result = extractor.extract(signal, features=requests)
     batch = extractor.extract_batch((signal, signal * 0.5), features=requests)
 
-    direct_values = (rms, peak_hz, power_8_12_hz, approximate, permutation)
+    direct_values = (
+        rms,
+        peak_hz,
+        power_8_12_hz,
+        approximate,
+        permutation,
+        mobility,
+        lz_complexity,
+        fisher,
+        higuchi,
+        dfa,
+        lyapunov,
+    )
     assert all(math.isfinite(value) for value in direct_values)
     assert abs(peak_hz - 10.0) <= psd.bin_spacing
     assert profile.point_count > 0
-    assert len(DEFAULT_FEATURE_NAMES) == 26
+    assert len(DEFAULT_FEATURE_NAMES) == 34
     assert not result.failed_features
     assert len(batch.rows) == 2
     assert all(not row.failed_features for row in batch.rows)
@@ -72,6 +108,10 @@ def main() -> None:
     print("Extracted values:")
     for name, value in result.values.items():
         print(f"  {name}: {value:.6g}")
+    print(
+        "Largest Lyapunov estimates are parameter-sensitive; "
+        "a positive value alone does not establish deterministic chaos."
+    )
     print("ABFE API smoke test passed.")
 
 

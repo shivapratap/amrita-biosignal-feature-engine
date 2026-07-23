@@ -12,6 +12,7 @@ from amrita_biosignal_feature_engine import (
     BandPowerRequest,
     ExtractorConfig,
     FeatureExtractor,
+    LargestLyapunovRequest,
     MultitaperPSDConfig,
     WelchPSDConfig,
 )
@@ -85,6 +86,65 @@ def test_signal_only_request_does_not_compute_psd(monkeypatch: pytest.MonkeyPatc
     assert result.failed_features == ()
 
 
+def test_extract_complexity_features_through_registry_dispatch() -> None:
+    signal, extractor = signal_and_extractor()
+    names = (
+        "lempel_ziv_complexity",
+        "hjorth_mobility",
+        "hjorth_complexity",
+        "fisher_information",
+        "petrosian_fractal_dimension",
+        "katz_fractal_dimension",
+        "higuchi_fractal_dimension",
+        "detrended_fluctuation_analysis",
+    )
+    result = extractor.extract(signal, features=names)
+    assert tuple(result.values) == names
+    assert all(np.isfinite(value) for value in result.values.values())
+    assert result.failed_features == ()
+    assert result.provenance.psd_config is None
+    assert result.provenance.feature_parameters == {
+        "lempel_ziv_complexity": {"normalize": True},
+        "fisher_information": {"order": 2, "delay": 1},
+        "higuchi_fractal_dimension": {"k_max": 10},
+        "detrended_fluctuation_analysis": {
+            "minimum_scale": 4,
+            "maximum_scale_fraction": 0.1,
+            "scale_ratio": 1.2,
+            "detrend_order": 1,
+            "scales": (4, 5, 6, 8, 9, 11, 14, 17, 20, 24, 29, 35),
+        },
+    }
+
+
+def test_largest_lyapunov_requires_explicit_request_and_records_provenance() -> None:
+    signal, extractor = signal_and_extractor()
+    request = LargestLyapunovRequest(
+        "largest_lyapunov_s_inverse",
+        embedding_dimension=3,
+        delay_samples=2,
+        minimum_separation_samples=10,
+        fit_start=0,
+        fit_end=6,
+    )
+    with pytest.raises(ValueError, match="explicit request"):
+        extractor.extract(signal, features=("largest_lyapunov_exponent",))
+    result = extractor.extract(signal, features=(request,))
+    assert tuple(result.values) == ("largest_lyapunov_s_inverse",)
+    assert np.isfinite(result.values["largest_lyapunov_s_inverse"])
+    assert result.provenance.feature_parameters == {
+        "largest_lyapunov_s_inverse": {
+            "sampling_frequency": 100.0,
+            "embedding_dimension": 3,
+            "delay_samples": 2,
+            "minimum_separation_samples": 10,
+            "fit_start": 0,
+            "fit_end": 6,
+            "output_units": "s^-1",
+        }
+    }
+
+
 def test_package_version_metadata_is_resolved_once_per_process(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -128,6 +188,23 @@ def test_explicit_band_power_and_ratio_requests() -> None:
     assert result.values["relative_8_12"] == pytest.approx(0.8, abs=1e-12)
     assert result.values["low_over_high"] == pytest.approx(4.0, rel=1e-12)
     assert result.failed_features == ()
+    assert result.provenance.feature_parameters == {
+        "power_8_12": {
+            "band": (8.0, 12.0),
+            "relative": False,
+            "output_units": "signal_units_squared",
+        },
+        "relative_8_12": {
+            "band": (8.0, 12.0),
+            "relative": True,
+            "output_units": "dimensionless",
+        },
+        "low_over_high": {
+            "numerator_band": (8.0, 12.0),
+            "denominator_band": (20.0, 30.0),
+            "output_units": "dimensionless",
+        },
+    }
 
 
 def test_underresolved_band_retains_value_warning_and_diagnostic() -> None:

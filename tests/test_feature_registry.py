@@ -35,6 +35,15 @@ EXPECTED_FEATURE_NAMES = (
     "fuzzy_entropy",
     "distribution_entropy",
     "svd_entropy",
+    "lempel_ziv_complexity",
+    "hjorth_mobility",
+    "hjorth_complexity",
+    "fisher_information",
+    "petrosian_fractal_dimension",
+    "katz_fractal_dimension",
+    "higuchi_fractal_dimension",
+    "detrended_fluctuation_analysis",
+    "largest_lyapunov_exponent",
     "peak_frequency",
     "mean_frequency",
     "median_frequency",
@@ -45,7 +54,9 @@ EXPECTED_FEATURE_NAMES = (
 
 def test_registry_has_exact_stable_scalar_catalog() -> None:
     assert tuple(FEATURE_REGISTRY) == EXPECTED_FEATURE_NAMES
-    assert DEFAULT_FEATURE_NAMES == EXPECTED_FEATURE_NAMES
+    assert DEFAULT_FEATURE_NAMES == tuple(
+        name for name in EXPECTED_FEATURE_NAMES if name != "largest_lyapunov_exponent"
+    )
     assert len(FEATURE_REGISTRY) == len(set(FEATURE_REGISTRY))
     assert "sample_entropy_profile" not in FEATURE_REGISTRY
 
@@ -77,6 +88,22 @@ def test_select_features_returns_new_ordered_tuple_without_mutation() -> None:
     )
     assert tuple(FEATURE_REGISTRY) == before
     assert select_features() is not select_features()
+    complexity = select_features(domains=[FeatureDomain.COMPLEXITY])
+    assert tuple(spec.name for spec in complexity) == (
+        "lempel_ziv_complexity",
+        "hjorth_mobility",
+        "hjorth_complexity",
+        "fisher_information",
+        "petrosian_fractal_dimension",
+        "katz_fractal_dimension",
+        "higuchi_fractal_dimension",
+        "detrended_fluctuation_analysis",
+        "largest_lyapunov_exponent",
+    )
+    assert all(
+        spec.request_required == (spec.name == "largest_lyapunov_exponent")
+        for spec in complexity
+    )
 
 
 def test_select_features_accepts_multiple_domains_in_registry_order() -> None:

@@ -26,6 +26,7 @@ import scipy
 from numpy.typing import NDArray
 
 import amrita_biosignal_feature_engine as abfe
+from amrita_biosignal_feature_engine.complexity import lempel_ziv_complexity
 from amrita_biosignal_feature_engine.entropy import (
     approximate_entropy,
     distribution_entropy,
@@ -34,6 +35,7 @@ from amrita_biosignal_feature_engine.entropy import (
     sample_entropy_profile,
     svd_entropy,
 )
+from amrita_biosignal_feature_engine.feature_registry import DEFAULT_FEATURE_NAMES
 from amrita_biosignal_feature_engine.frequency_domain import peak_frequency
 from amrita_biosignal_feature_engine.time_domain import (
     integrated_absolute_value,
@@ -96,6 +98,10 @@ CASES = (
     BenchmarkCase("multitaper_psd_n4096", "multitaper_psd", 4096),
     BenchmarkCase("entropy_linear_n256", "entropy_linear", 256),
     BenchmarkCase("entropy_linear_n1024", "entropy_linear", 1024),
+    BenchmarkCase("lempel_ziv_n512", "lempel_ziv", 512),
+    BenchmarkCase("lempel_ziv_n1024", "lempel_ziv", 1024),
+    BenchmarkCase("lempel_ziv_n2048", "lempel_ziv", 2048),
+    BenchmarkCase("lempel_ziv_n4096", "lempel_ziv", 4096),
     BenchmarkCase("entropy_quadratic_n256", "entropy_quadratic", 256),
     BenchmarkCase("entropy_quadratic_n1024", "entropy_quadratic", 1024),
     BenchmarkCase("sample_entropy_profile_n256", "sample_entropy_profile", 256),
@@ -179,6 +185,10 @@ def _prepare_case(case: BenchmarkCase) -> Callable[[], float]:
                 + svd_entropy(signal, order=3)
             )
 
+    elif case.category == "lempel_ziv":
+        def compute() -> float:
+            return lempel_ziv_complexity(signal)
+
     elif case.category == "entropy_quadratic":
         def compute() -> float:
             return float(
@@ -201,7 +211,7 @@ def _prepare_case(case: BenchmarkCase) -> Callable[[], float]:
 
         def compute() -> float:
             result = extractor.extract(signal)
-            if result.failed_features or len(result.values) != 26:
+            if result.failed_features or len(result.values) != len(DEFAULT_FEATURE_NAMES):
                 raise AssertionError(
                     "mixed extraction failed: "
                     f"{result.failed_features}, {len(result.values)} values"

@@ -14,6 +14,7 @@ class FeatureDomain(str, Enum):
     TIME = "time"
     FREQUENCY = "frequency"
     ENTROPY = "entropy"
+    COMPLEXITY = "complexity"
 
 
 class FeatureInput(str, Enum):
@@ -31,18 +32,26 @@ class FeatureSpec:
     domain: FeatureDomain
     input_kind: FeatureInput
     description: str
+    request_required: bool = False
 
     def __post_init__(self) -> None:
         if not self.name or self.name.strip() != self.name:
             raise ValueError("feature name must be nonempty and have no surrounding whitespace")
         if not self.description:
             raise ValueError("feature description must be nonempty")
+        if not isinstance(self.request_required, bool):
+            raise TypeError("request_required must be a boolean")
 
 
 def _spec(
-    name: str, domain: FeatureDomain, input_kind: FeatureInput, description: str
+    name: str,
+    domain: FeatureDomain,
+    input_kind: FeatureInput,
+    description: str,
+    *,
+    request_required: bool = False,
 ) -> FeatureSpec:
-    return FeatureSpec(name, domain, input_kind, description)
+    return FeatureSpec(name, domain, input_kind, description, request_required)
 
 
 _FEATURE_SPECS = (
@@ -125,6 +134,61 @@ _FEATURE_SPECS = (
         "Entropy of delayed-embedding singular values.",
     ),
     _spec(
+        "lempel_ziv_complexity",
+        FeatureDomain.COMPLEXITY,
+        FeatureInput.SIGNAL,
+        "Median-binarized LZ76 exhaustive-history complexity.",
+    ),
+    _spec(
+        "hjorth_mobility",
+        FeatureDomain.COMPLEXITY,
+        FeatureInput.SIGNAL,
+        "Hjorth mobility in samples^-1.",
+    ),
+    _spec(
+        "hjorth_complexity",
+        FeatureDomain.COMPLEXITY,
+        FeatureInput.SIGNAL,
+        "Dimensionless Hjorth complexity.",
+    ),
+    _spec(
+        "fisher_information",
+        FeatureDomain.COMPLEXITY,
+        FeatureInput.SIGNAL,
+        "SVD-spectrum Fisher information.",
+    ),
+    _spec(
+        "petrosian_fractal_dimension",
+        FeatureDomain.COMPLEXITY,
+        FeatureInput.SIGNAL,
+        "Petrosian fractal dimension.",
+    ),
+    _spec(
+        "katz_fractal_dimension",
+        FeatureDomain.COMPLEXITY,
+        FeatureInput.SIGNAL,
+        "Katz fractal dimension.",
+    ),
+    _spec(
+        "higuchi_fractal_dimension",
+        FeatureDomain.COMPLEXITY,
+        FeatureInput.SIGNAL,
+        "Higuchi multiscale curve-length fractal dimension.",
+    ),
+    _spec(
+        "detrended_fluctuation_analysis",
+        FeatureDomain.COMPLEXITY,
+        FeatureInput.SIGNAL,
+        "Detrended-fluctuation scaling exponent.",
+    ),
+    _spec(
+        "largest_lyapunov_exponent",
+        FeatureDomain.COMPLEXITY,
+        FeatureInput.SIGNAL,
+        "Rosenstein largest Lyapunov exponent in inverse seconds.",
+        request_required=True,
+    ),
+    _spec(
         "peak_frequency", FeatureDomain.FREQUENCY, FeatureInput.PSD, "Frequency of maximum PSD."
     ),
     _spec(
@@ -159,7 +223,9 @@ if len({spec.name for spec in _FEATURE_SPECS}) != len(_FEATURE_SPECS):
 FEATURE_REGISTRY: Mapping[str, FeatureSpec] = MappingProxyType(
     {spec.name: spec for spec in _FEATURE_SPECS}
 )
-DEFAULT_FEATURE_NAMES: tuple[str, ...] = tuple(FEATURE_REGISTRY)
+DEFAULT_FEATURE_NAMES: tuple[str, ...] = tuple(
+    name for name, spec in FEATURE_REGISTRY.items() if not spec.request_required
+)
 
 
 def get_feature_spec(name: str) -> FeatureSpec:

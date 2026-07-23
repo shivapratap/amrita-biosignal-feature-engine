@@ -12,6 +12,7 @@ def test_top_level_exports_only_core_infrastructure() -> None:
         "ExtractionResult",
         "ExtractorConfig",
         "FeatureExtractor",
+        "LargestLyapunovRequest",
         "MultitaperPSDConfig",
         "PSDResult",
         "WelchPSDConfig",
@@ -29,6 +30,15 @@ def test_individual_feature_functions_are_not_flattened_at_top_level() -> None:
         "sample_entropy_profile",
         "permutation_entropy",
         "svd_entropy",
+        "hjorth_mobility",
+        "hjorth_complexity",
+        "petrosian_fractal_dimension",
+        "katz_fractal_dimension",
+        "lempel_ziv_complexity",
+        "fisher_information",
+        "higuchi_fractal_dimension",
+        "detrended_fluctuation_analysis",
+        "largest_lyapunov_exponent",
     ):
         assert name not in abfe.__all__
         assert not hasattr(abfe, name)

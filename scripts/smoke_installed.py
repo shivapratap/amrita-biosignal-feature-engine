@@ -7,6 +7,17 @@ import argparse
 import numpy as np
 
 import amrita_biosignal_feature_engine as abfe
+from amrita_biosignal_feature_engine.complexity import (
+    detrended_fluctuation_analysis,
+    fisher_information,
+    higuchi_fractal_dimension,
+    hjorth_complexity,
+    hjorth_mobility,
+    katz_fractal_dimension,
+    largest_lyapunov_exponent,
+    lempel_ziv_complexity,
+    petrosian_fractal_dimension,
+)
 from amrita_biosignal_feature_engine.entropy import (
     approximate_entropy,
     distribution_entropy,
@@ -60,11 +71,37 @@ def main() -> None:
         raise AssertionError("scalar entropy smoke calculation failed")
     if sample_entropy_profile(short_signal, order=2).point_count <= 0:
         raise AssertionError("sample-entropy profile smoke calculation failed")
+    complexity_values = (
+        hjorth_mobility(short_signal),
+        hjorth_complexity(short_signal),
+        petrosian_fractal_dimension(short_signal),
+        katz_fractal_dimension(short_signal),
+        lempel_ziv_complexity(short_signal),
+        fisher_information(short_signal),
+        higuchi_fractal_dimension(short_signal),
+        detrended_fluctuation_analysis(short_signal),
+        largest_lyapunov_exponent(
+            short_signal,
+            sampling_frequency=sampling_frequency,
+            embedding_dimension=3,
+            delay_samples=2,
+            minimum_separation_samples=5,
+            fit_start=0,
+            fit_end=6,
+        ),
+    )
+    if not all(np.isfinite(value) for value in complexity_values):
+        raise AssertionError("complexity smoke calculation failed")
 
     extractor = abfe.FeatureExtractor(abfe.ExtractorConfig(sampling_frequency, config))
     extracted = extractor.extract(
         signal,
-        features=("root_mean_square", "approximate_entropy", "spectral_entropy"),
+        features=(
+            "root_mean_square",
+            "approximate_entropy",
+            "spectral_entropy",
+            abfe.LargestLyapunovRequest("largest_lyapunov_s_inverse", 3, 2, 5, 0, 6),
+        ),
     )
     batch = extractor.extract_batch(
         (signal, signal),
