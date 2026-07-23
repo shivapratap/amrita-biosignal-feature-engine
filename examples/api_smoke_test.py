@@ -108,6 +108,10 @@ def main() -> None:
     print("Extracted values:")
     for name, value in result.values.items():
         print(f"  {name}: {value:.6g}")
+    print(
+        "Largest Lyapunov estimates are parameter-sensitive; "
+        "a positive value alone does not establish deterministic chaos."
+    )
     print("ABFE API smoke test passed.")
 
 

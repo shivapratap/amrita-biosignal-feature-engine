@@ -9,18 +9,19 @@ fractal/complexity features. It does not segment, filter, round, or infer
 physiological frequency bands. Those choices remain explicit responsibilities
 of the caller's signal-processing pipeline.
 
-> The ABFE `v0.1.0` release candidate is frozen. Once the GitHub Release is
-> published, install its versioned artifact rather than a floating branch in
-> research pipelines.
+The latest stable GitHub Release is `v0.1.0`. The repository's development
+source is preparing `v0.2.0` and should not replace a versioned release
+artifact in a reproducible research pipeline.
 
 ## Installation
 
 ABFE is currently installed from GitHub Releases:
 
 1. Open the [ABFE Releases page](https://github.com/shivapratap/amrita-biosignal-feature-engine/releases).
-2. Select the release you want to install.
-3. Under **Assets**, download the file whose name ends in `.whl` (for v0.1.0,
-   this is `amrita_biosignal_feature_engine-0.1.0-py3-none-any.whl`).
+2. Select the version you want.
+3. Under **Assets**, download the file ending in `.whl`. For example, the
+   v0.1.0 wheel is
+   `amrita_biosignal_feature_engine-0.1.0-py3-none-any.whl`.
 4. Open a terminal in the folder containing the downloaded file and run:
 
 ```bash
@@ -48,6 +49,7 @@ from amrita_biosignal_feature_engine import (
     BandPowerRequest,
     ExtractorConfig,
     FeatureExtractor,
+    LargestLyapunovRequest,
     WelchPSDConfig,
 )
 
@@ -68,12 +70,21 @@ result = extractor.extract(
     features=(
         "root_mean_square",
         "approximate_entropy",
+        "lempel_ziv_complexity",
         "spectral_entropy",
         BandPowerRequest("power_8_12_hz", (8.0, 12.0)),
         BandPowerRatioRequest(
             "power_8_12_over_20_30",
             (8.0, 12.0),
             (20.0, 30.0),
+        ),
+        LargestLyapunovRequest(
+            "largest_lyapunov_s_inverse",
+            embedding_dimension=3,
+            delay_samples=2,
+            minimum_separation_samples=10,
+            fit_start=0,
+            fit_end=6,
         ),
     ),
 )
@@ -88,6 +99,11 @@ All requested frequency features share one explicitly configured PSD. The
 result records the PSD configuration, achieved bin spacing, segment count,
 resolved feature parameters, sampling frequency, signal length, and package
 version.
+
+`LargestLyapunovRequest` has no scientific defaults. Its parameters above are
+an executable API example, not general-purpose recommendations. Choose them
+for the signal and study design; a positive estimate alone does not establish
+deterministic chaos.
 
 ## Implemented features
 
@@ -184,8 +200,11 @@ v0.1.0 development baseline and its limitations are documented in
 [docs/performance-baseline.md](docs/performance-baseline.md). Pairwise-distance
 entropy functions and the structured sample-entropy profile have quadratic
 time and/or memory characteristics and deserve particular care for long
-windows. Performance redesign is planned for v0.2.0; v0.1.0 prioritizes the
-currently validated numerical definitions.
+windows. The v0.2.0 complexity work replaces the former quadratic Python LZ76
+history scan with a validated approximately linear-scaling suffix-automaton
+parser; its reproducible evidence is described in
+[benchmarks/README.md](benchmarks/README.md). Other numerical algorithms retain
+their validated definitions unless separately redesigned and revalidated.
 
 ## Development
 

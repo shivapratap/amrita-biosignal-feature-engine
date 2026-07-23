@@ -7,6 +7,10 @@ before/after values, and a regression test.
 
 ### Fractal and complexity design
 
+- Completed v0.2.0 Release-Readiness Batch B: synchronized the stable/development
+  installation guidance, 35-entry registry catalogue, all nine complexity
+  signatures and degeneracy contracts, request-only Lyapunov example, public
+  API policy, and executable smoke documentation.
 - Completed v0.2.0 Release-Readiness Batch A: classified every feature-branch
   change against the published v0.1.0 commit, confirmed the nine-feature scope
   and exact external-reference pins, found no tracked generated or credential
