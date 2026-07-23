@@ -7,6 +7,14 @@ before/after values, and a regression test.
 
 ### Fractal and complexity design
 
+- Closed the complexity implementation phase after focused independent
+  re-audit of remediation commit `e02f88e`: duplicate-embedding Lyapunov
+  selection matched the full-distance oracle within approximately `1.1e-16`,
+  all 131,068 binary sequences through length 16 matched the independent LZ76
+  parser, and no release-blocking finding remained.
+- Added the staged v0.2.0 integration and release-readiness design covering
+  repository hygiene, public documentation, evidence closure, CI/artifacts,
+  final independent audit, version freeze, integration, and publication.
 - Corrected Rosenstein nearest-neighbor selection to exclude exact
   zero-distance duplicate embeddings before choosing the nearest admissible
   neighbor. Before the correction, the audited repeated-pattern input selected
