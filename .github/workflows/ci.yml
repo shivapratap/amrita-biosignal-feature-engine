@@ -33,9 +33,13 @@ jobs:
         run: python -m mypy --no-incremental --python-version 3.10
       - if: matrix.python == '3.13'
         run: python -m mypy --no-incremental --python-version 3.13
-      - name: Reject tracked generated caches
+      - name: Reject tracked generated or workspace-only files
         run: |
-          test -z "$(git ls-files '.mypy_cache/**' '.pytest_cache/**' '.ruff_cache/**' '**/__pycache__/**')"
+          test -z "$(git ls-files \
+            '.mypy_cache/**' '.pytest_cache/**' '.ruff_cache/**' \
+            '**/__pycache__/**' '*.pyc' '*.pyo' '*.whl' '*.tar.gz' \
+            'build/**' 'dist/**' '.venv/**' '.DS_Store' 'AGENTS.md' \
+            '*Audit*Report*')"
 
   wheel:
     name: Build and inspect distributions

@@ -7,6 +7,18 @@ before/after values, and a regression test.
 
 ### Fractal and complexity design
 
+- Prepared v0.2.0 Release-Readiness Batch D locally: generalized the read-only
+  manual artifact rehearsal to the declared candidate version, added separate
+  wheel/source fresh-install smoke tests to rehearsal and tag paths, restricted
+  publication to a matching stable three-component version tag, and broadened
+  CI rejection of tracked generated or workspace-only files. Remote rehearsal
+  remains separately approved work.
+- The local Batch D matrix passed 558 offline tests on Python 3.10 with NumPy
+  1.24.4/SciPy 1.10.1, all 433 pinned reference tests in a clean Python 3.12
+  environment, and independent wheel/source installation smoke tests on Python
+  3.13. Corrected nine test-helper annotations from bare `np.ndarray` to
+  `NDArray[np.float64]` so strict mypy is consistent at the Python 3.10 target;
+  this has no runtime or numerical effect.
 - Completed v0.2.0 Release-Readiness Batch C evidence work: added a
   reproducible LZ76 before/after generator with exact source commits, input
   digests, timing methodology, installed-package metadata, and peak Python

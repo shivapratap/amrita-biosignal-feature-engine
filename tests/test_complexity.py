@@ -5,7 +5,7 @@ from typing import TypedDict
 
 import numpy as np
 import pytest
-from numpy.typing import ArrayLike
+from numpy.typing import ArrayLike, NDArray
 
 from amrita_biosignal_feature_engine.complexity import (
     _resolve_dfa_scales,
@@ -30,14 +30,14 @@ class _LyapunovParameters(TypedDict):
     fit_end: int
 
 
-def _manual_hjorth(signal: np.ndarray) -> tuple[float, float]:
+def _manual_hjorth(signal: NDArray[np.float64]) -> tuple[float, float]:
     first = np.diff(signal)
     mobility = np.sqrt(np.var(first) / np.var(signal))
     derivative_mobility = np.sqrt(np.var(np.diff(first)) / np.var(first))
     return float(mobility), float(derivative_mobility / mobility)
 
 
-def _manual_katz(signal: np.ndarray) -> float:
+def _manual_katz(signal: NDArray[np.float64]) -> float:
     steps = np.abs(np.diff(signal))
     path_length = np.sum(steps)
     mean_step = np.mean(steps)
@@ -82,7 +82,7 @@ def test_hjorth_features_match_independent_population_variance_oracle() -> None:
 
 
 def _eigenvalue_fisher_oracle(
-    signal: np.ndarray, *, order: int, delay: int
+    signal: NDArray[np.float64], *, order: int, delay: int
 ) -> float:
     centered = signal - np.mean(signal)
     rows = centered.size - (order - 1) * delay
@@ -197,7 +197,9 @@ def test_katz_matches_independent_geometry_oracle() -> None:
     assert np.isnan(katz_fractal_dimension(np.array([0.0, 1.0])))
 
 
-def _literal_higuchi_oracle(signal: np.ndarray, *, k_max: int) -> float:
+def _literal_higuchi_oracle(
+    signal: NDArray[np.float64], *, k_max: int
+) -> float:
     length = signal.size
     scale_lengths: list[float] = []
     for scale in range(1, k_max + 1):
@@ -256,7 +258,10 @@ def test_higuchi_is_affine_invariant(scale: float, offset: float) -> None:
 
 
 def _literal_dfa_oracle(
-    signal: np.ndarray, *, scales: tuple[int, ...], detrend_order: int
+    signal: NDArray[np.float64],
+    *,
+    scales: tuple[int, ...],
+    detrend_order: int,
 ) -> float:
     integrated = np.cumsum(signal - np.mean(signal))
     fluctuations: list[float] = []
@@ -379,7 +384,7 @@ def test_dfa_rejects_invalid_generator_and_detrending_parameters() -> None:
 
 
 def _literal_lyapunov_oracle(
-    signal: np.ndarray,
+    signal: NDArray[np.float64],
     *,
     sampling_frequency: float,
     embedding_dimension: int,
@@ -435,7 +440,9 @@ def _literal_lyapunov_oracle(
     return float(coefficients[1])
 
 
-def _logistic_signal(length: int, *, parameter: float = 4.0) -> np.ndarray:
+def _logistic_signal(
+    length: int, *, parameter: float = 4.0
+) -> NDArray[np.float64]:
     values = np.empty(length + 500)
     values[0] = 0.123456789
     for index in range(values.size - 1):
@@ -443,11 +450,13 @@ def _logistic_signal(length: int, *, parameter: float = 4.0) -> np.ndarray:
     return values[500:]
 
 
-def _lorenz_x_signal(length: int, *, step_seconds: float = 0.01) -> np.ndarray:
+def _lorenz_x_signal(
+    length: int, *, step_seconds: float = 0.01
+) -> NDArray[np.float64]:
     states = np.empty((length + 1000, 3))
     states[0] = (1.0, 1.0, 1.0)
 
-    def derivative(state: np.ndarray) -> np.ndarray:
+    def derivative(state: NDArray[np.float64]) -> NDArray[np.float64]:
         x_value, y_value, z_value = state
         return np.array(
             (
