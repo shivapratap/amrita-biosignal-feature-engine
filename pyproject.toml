@@ -1,0 +1,78 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "amrita-biosignal-feature-engine"
+version = "0.1.0"
+description = "Domain-neutral feature extraction for pre-windowed biomedical signals"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [{ name = "Shivapratap Gopakumar", email = "shivapratap@gmail.com" }]
+maintainers = [{ name = "Shivapratap Gopakumar", email = "shivapratap@gmail.com" }]
+keywords = [
+    "biomedical-signal-processing",
+    "biosignals",
+    "feature-extraction",
+    "time-series",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Typing :: Typed",
+]
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+]
+
+[project.urls]
+Homepage = "https://github.com/shivapratap/amrita-biosignal-feature-engine"
+Documentation = "https://github.com/shivapratap/amrita-biosignal-feature-engine/tree/main/docs"
+Repository = "https://github.com/shivapratap/amrita-biosignal-feature-engine"
+Issues = "https://github.com/shivapratap/amrita-biosignal-feature-engine/issues"
+Changelog = "https://github.com/shivapratap/amrita-biosignal-feature-engine/blob/main/CHANGES.md"
+
+[project.optional-dependencies]
+dev = [
+    "mypy>=1.10",
+    "pytest>=8.0",
+    "ruff>=0.6",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/amrita_biosignal_feature_engine"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+pythonpath = ["src"]
+markers = [
+    "reference: requires pinned external numerical reference packages",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+incremental = false
+files = ["src", "tests", "benchmarks", "scripts"]
+
+[[tool.mypy.overrides]]
+module = ["mne.*", "scipy", "scipy.*"]
+ignore_missing_imports = true
