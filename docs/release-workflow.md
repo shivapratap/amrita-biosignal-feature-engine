@@ -3,21 +3,20 @@
 ABFE v0.1.0 will initially be distributed through GitHub Releases only. PyPI
 publication remains deferred until additional student testing is complete.
 
-The proposed tag workflow is stored as
-`.github/workflows/release.yml.disabled`. GitHub does not execute files with
-that suffix. It must remain disabled until the user separately approves:
+The active workflow is stored as `.github/workflows/release.yml`. It has two
+strictly separated entry paths:
 
-1. the final `0.1.0` version and release date;
-2. the reviewed initial Git history and remote push;
-3. activation of the workflow;
-4. creation and push of annotated tag `v0.1.0`; and
-5. publication of the corresponding GitHub Release.
+1. A manually triggered dry run uses `contents: read`, requires the frozen
+   package version to be `0.1.0`, builds the wheel and source distribution,
+   validates their contents and metadata, and generates and verifies SHA-256
+   hashes. It does not upload artifacts, create a tag, or create a release.
+2. A push of a `v*` tag runs the publishing job. That job checks that the tag
+   exactly equals `v` plus the project version, rebuilds and validates the
+   distributions, writes SHA-256 hashes, and attaches the distributions and
+   hash manifest to the corresponding GitHub Release. It does not publish to
+   PyPI.
 
-Once activated, the workflow checks that the tag exactly equals `v` plus the
-project version, builds wheel and source distribution from that tag, validates
-their contents and metadata, writes SHA-256 hashes, and attaches only those
-artifacts and the hash manifest to an immutable GitHub Release. It does not
-publish to PyPI.
-
-The workflow requests `contents: write` only for its release job. Ordinary CI
-retains default read permissions and never publishes artifacts.
+The manual dry run completed successfully on 2026-07-23, and GitHub confirmed
+that the publishing job was skipped. The repository-level permission remains
+`contents: read`; only the tag-gated publishing job requests `contents: write`.
+Creating or pushing `v0.1.0` still requires separate explicit approval.

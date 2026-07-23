@@ -96,10 +96,11 @@ cross-machine release thresholds.
    and trusted-publishing policy are approved. The workflow must build from the
    tag and must not publish on ordinary pushes.
 
-The GitHub-only workflow is prepared as
-`.github/workflows/release.yml.disabled`. It is intentionally inert and cannot
-run until the separately approved release freeze, when it may be reviewed and
-renamed to `release.yml`.
+The GitHub-only workflow is active as `.github/workflows/release.yml`. Its
+manual dry-run path has read-only repository permission and cannot publish; its
+separate publishing job runs only for a pushed `v*` tag. The v0.1.0 dry run
+successfully built and validated both distributions and verified their hashes
+while the publishing job remained skipped.
 
 Exit evidence: green CI, artifact manifests, metadata validation, and clean
 wheel/source-distribution smoke tests.
@@ -131,10 +132,11 @@ unresolved blocking findings.
 
 This gate requires separate user approval.
 
-Preparation status on 2026-07-23: the local candidate is frozen at `0.1.0`,
-release-date metadata and the changelog are finalized, and the confirmed stale
-Git index lock has been removed. No commit, remote, push, tag, workflow
-activation, or GitHub Release has been created.
+Preparation status on 2026-07-23: the candidate is frozen at `0.1.0`,
+release-date metadata and the changelog are finalized, the reviewed Git history
+is pushed to the public repository, remote CI is green, and the active release
+workflow has passed its manual dry run. No tag or GitHub Release has been
+created.
 
 1. Change `0.1.0.dev0` to `0.1.0`, update release-date metadata, and freeze the
    changelog.
@@ -150,11 +152,11 @@ activation, or GitHub Release has been created.
    test.
 8. Record artifact hashes and the public release URL.
 
-## Current known gaps
+## Current status and remaining publication steps
 
-- The repository has no commits and no configured remote.
-- The canonical repository is planned as
-  `shivapratap/amrita-biosignal-feature-engine`, but it has not been created.
+- The public repository is
+  `shivapratap/amrita-biosignal-feature-engine`; local `main` tracks the remote
+  `main` branch.
 - Shivapratap Gopakumar is the author and maintainer. Distribution is through
   GitHub Releases only for v0.1.0; PyPI is deferred until additional student
   testing has been completed.
@@ -163,12 +165,13 @@ activation, or GitHub Release has been created.
 - Audit reports are workspace evidence and are excluded from the public
   repository by policy.
 - The benchmark baseline, citation file, artifact validator, independent
-  wheel/source-distribution smoke tests, and disabled release-workflow template
-  are complete. Citation metadata still needs the final version and release
-  date during Gate 6.
-- The pre-existing zero-byte `.git/index.lock` was confirmed stale and removed
-  before any initial-history operation.
+  wheel/source-distribution smoke tests, active release workflow, and manual
+  release rehearsal are complete.
 - The package-wide independent execution-based Gate 5 audit completed with
   `PASS WITH MINOR FOLLOW-UPS`. Its only source blocker, RC-001, was closed by
   parameterizing the benchmark signal return type as `NDArray[np.float64]`.
-  Gate 5 is closed; the stale Git lock remains Gate 6 repository housekeeping.
+  Gate 5 is closed.
+- The remaining publication work is to create and push the annotated `v0.1.0`
+  tag, monitor the tag-gated publication job, and verify the downloadable
+  artifacts and checksums in a fresh installation. These actions require
+  separate explicit approval.

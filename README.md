@@ -14,11 +14,23 @@ remain explicit responsibilities of the caller's signal-processing pipeline.
 
 ## Installation
 
-The first release will initially be distributed through GitHub Releases. After
-downloading the wheel attached to a release, install that versioned artifact:
+ABFE is currently installed from GitHub Releases:
+
+1. Open the [ABFE Releases page](https://github.com/shivapratap/amrita-biosignal-feature-engine/releases).
+2. Select the release you want to install.
+3. Under **Assets**, download the file whose name ends in `.whl` (for v0.1.0,
+   this is `amrita_biosignal_feature_engine-0.1.0-py3-none-any.whl`).
+4. Open a terminal in the folder containing the downloaded file and run:
 
 ```bash
 python -m pip install amrita_biosignal_feature_engine-0.1.0-py3-none-any.whl
+```
+
+If you downloaded the file to another folder, provide its full path instead of
+just the filename. You can verify the installation with:
+
+```bash
+python -c "import amrita_biosignal_feature_engine as abfe; print(abfe.__version__)"
 ```
 
 ABFE supports Python 3.10 through 3.13 and requires NumPy 1.24 or later and
@@ -92,23 +104,44 @@ are available through explicit request objects. The structured sample-entropy
 profile remains a direct function rather than being collapsed into an invented
 scalar registry value.
 
-## Direct scientific API
+## Public API at a glance
 
-Individual computations remain in domain submodules:
+The main package contains extraction and PSD orchestration. Individual
+scientific calculations live in domain-specific submodules so their inputs are
+explicit.
 
-```python
-from amrita_biosignal_feature_engine.entropy import sample_entropy_profile
-from amrita_biosignal_feature_engine.frequency_domain import peak_frequency
-from amrita_biosignal_feature_engine.time_domain import root_mean_square
-```
+| Import path | Public API |
+| --- | --- |
+| `amrita_biosignal_feature_engine` | `FeatureExtractor`, `ExtractorConfig`, `BandPowerRequest`, `BandPowerRatioRequest`, `ExtractionResult`, `BatchExtractionResult`, `ExtractionProvenance`, `WelchPSDConfig`, `MultitaperPSDConfig`, `PSDResult`, `compute_psd`, `__version__` |
+| `amrita_biosignal_feature_engine.time_domain` | `minimum`, `maximum`, `sum_value`, `mean`, `median`, `standard_deviation`, `variance`, `kurtosis`, `skewness`, `mean_absolute_value`, `root_mean_square`, `peak_to_peak`, `integrated_absolute_value`, `waveform_length`, `zero_crossing_count`, `slope_sign_change_count` |
+| `amrita_biosignal_feature_engine.frequency_domain` | `peak_frequency`, `mean_frequency`, `median_frequency`, `spectral_edge_frequency`, `spectral_entropy`, `band_power`, `band_power_ratio` |
+| `amrita_biosignal_feature_engine.entropy` | `approximate_entropy`, `permutation_entropy`, `fuzzy_entropy`, `distribution_entropy`, `svd_entropy`, `sample_entropy_profile`, `SampleEntropyProfile` |
+| `amrita_biosignal_feature_engine.feature_registry` | `FEATURE_REGISTRY`, `DEFAULT_FEATURE_NAMES`, `FeatureSpec`, `FeatureDomain`, `FeatureInput`, `get_feature_spec`, `select_features` |
+| `amrita_biosignal_feature_engine.diagnostics` | `ABFEWarning`, `FrequencyResolutionWarning`, `DiagnosticSeverity`, `DiagnosticCode`, `FeatureDiagnostic` |
+| `amrita_biosignal_feature_engine.validation` | `validate_signal`, `validate_nonnegative_threshold` |
 
 Welch and multitaper PSD construction is explicit through `WelchPSDConfig` and
 `MultitaperPSDConfig`. Frequency functions consume a `PSDResult`, allowing one
 PSD to be reused without hidden spectral defaults.
 
-See [API reference](docs/api-reference.md), [PSD definitions](docs/psd.md),
-[validation contract](docs/validation.md), [entropy validation](docs/entropy-validation.md),
-and [API design](docs/api-design.md).
+See the [complete API reference](docs/api-reference.md),
+[PSD definitions](docs/psd.md), [validation contract](docs/validation.md),
+[entropy validation](docs/entropy-validation.md), and
+[API design](docs/api-design.md) for parameters, return values, exceptions,
+diagnostics, and numerical definitions.
+
+## Test your installation
+
+After installing ABFE, download or clone this repository and run the included
+self-checking example:
+
+```bash
+python examples/api_smoke_test.py
+```
+
+The script exercises the public extractor, direct time-domain, PSD,
+frequency-domain, entropy, registry, and batch APIs. A successful run ends
+with `ABFE API smoke test passed.`
 
 ## Failure and degeneracy policy
 
