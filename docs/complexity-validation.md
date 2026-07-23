@@ -1,9 +1,11 @@
 # Fractal and complexity numerical design
 
-This document freezes the proposed v0.2.0 definitions for eight
-fractal/complexity features mapped from DIHC Feature Manager and one new
-largest-Lyapunov-exponent feature. It is a design specification, not a claim
-that the algorithms are implemented.
+This document freezes the v0.2.0 definitions for eight fractal/complexity
+features mapped from DIHC Feature Manager and one new
+largest-Lyapunov-exponent feature. Hjorth mobility, Hjorth complexity,
+Petrosian fractal dimension, and Katz fractal dimension are implemented in the
+first correctness batch. The remaining five definitions are design
+specifications and are not yet implementation claims.
 
 The nine planned public function names are:
 
@@ -17,7 +19,7 @@ The nine planned public function names are:
 8. `detrended_fluctuation_analysis`
 9. `largest_lyapunov_exponent`
 
-They will live in
+They live, or upon implementation will live, in
 `amrita_biosignal_feature_engine.complexity`. Individual scientific functions
 will remain submodule-only; they will not be promoted into the package's
 top-level namespace.
@@ -38,7 +40,7 @@ All scalar results are Python `float` values at full precision. No
 reporting-time rounding, hidden filtering, resampling, segmentation, or
 physiological preset is permitted.
 
-The immutable registry will gain `FeatureDomain.COMPLEXITY`; all nine
+The immutable registry includes `FeatureDomain.COMPLEXITY`; all nine
 computations consume `FeatureInput.SIGNAL`. Parameterized extractor use must
 record every resolved parameter in immutable provenance. The largest Lyapunov
 exponent will use a frozen `LargestLyapunovRequest` because its reconstruction
@@ -510,16 +512,17 @@ positive estimate alone is not sufficient evidence of deterministic chaos.
 
 ## Registry and extractor policy
 
-The eight DIHC-mapped names will be registered with the snake-case identifiers
-at the beginning of this document. Registry metadata will identify
-`FeatureDomain.COMPLEXITY` and `FeatureInput.SIGNAL`.
+The implemented DIHC-mapped names are registered with the snake-case
+identifiers at the beginning of this document. Registry metadata identifies
+`FeatureDomain.COMPLEXITY` and `FeatureInput.SIGNAL`; the remaining names will
+be added only when their implementations and validation land.
 
 The parameter-free Hjorth, Petrosian, and Katz features may be requested by
 registry name. Lempel-Ziv, Fisher information, Higuchi fractal dimension, and
 DFA will use documented canonical defaults for name-only extraction and will
 also expose direct function parameters.
 
-`FeatureSpec` will gain an immutable `request_required: bool = False` field.
+`FeatureSpec` has an immutable `request_required: bool = False` field.
 The `largest_lyapunov_exponent` specification will set it to `True`, remain
 discoverable in `FEATURE_REGISTRY`, and be excluded from
 `DEFAULT_FEATURE_NAMES`. Passing its bare registry string to extraction will
@@ -575,8 +578,7 @@ without encoding machine-specific release thresholds.
 
 ## Implementation gate
 
-No algorithm implementation begins until this document receives explicit
-approval. Any later change to a formula, default, minimum-length rule,
-degeneracy policy, or unit is a numerically consequential change and must
-include before/after evidence plus focused regression tests under
-`CONTRIBUTING.md`.
+This design received explicit approval before implementation began. Any later
+change to a formula, default, minimum-length rule, degeneracy policy, or unit
+is a numerically consequential change and must include before/after evidence
+plus focused regression tests under `CONTRIBUTING.md`.

@@ -15,6 +15,12 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 from . import time_domain
+from .complexity import (
+    hjorth_complexity,
+    hjorth_mobility,
+    katz_fractal_dimension,
+    petrosian_fractal_dimension,
+)
 from .diagnostics import (
     DiagnosticCode,
     DiagnosticSeverity,
@@ -286,6 +292,10 @@ _SIGNAL_DISPATCH: Mapping[str, ScalarSignalFunction] = MappingProxyType(
         "fuzzy_entropy": fuzzy_entropy,
         "distribution_entropy": distribution_entropy,
         "svd_entropy": svd_entropy,
+        "hjorth_mobility": hjorth_mobility,
+        "hjorth_complexity": hjorth_complexity,
+        "petrosian_fractal_dimension": petrosian_fractal_dimension,
+        "katz_fractal_dimension": katz_fractal_dimension,
     }
 )
 
@@ -324,6 +334,8 @@ def _resolve_features(features: Iterable[FeatureRequest]) -> tuple[_ResolvedFeat
     for item in features:
         if isinstance(item, str):
             spec = get_feature_spec(item)
+            if spec.request_required:
+                raise ValueError(f"feature {item!r} requires an explicit request object")
             resolved.append(_ResolvedFeature(item, item, None, spec.input_kind))
         elif isinstance(item, BandPowerRequest | BandPowerRatioRequest):
             resolved.append(_ResolvedFeature(item.output_name, None, item, FeatureInput.PSD))

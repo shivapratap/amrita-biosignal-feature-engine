@@ -12,6 +12,7 @@ from pathlib import Path, PurePosixPath
 PACKAGE = "amrita_biosignal_feature_engine"
 SOURCE_MODULES = {
     "__init__.py",
+    "complexity.py",
     "diagnostics.py",
     "extractor.py",
     "feature_registry.py",

@@ -8,9 +8,17 @@ before/after values, and a regression test.
 ### Fractal and complexity design
 
 - Opened the v0.2.0 development cycle at version `0.2.0.dev0`.
-- Specified, without yet implementing, eight time-domain fractal/complexity
-  features mapped from DIHC Feature Manager plus a new Rosenstein largest
-  Lyapunov exponent estimator.
+- Implemented the first correctness batch: Hjorth mobility, Hjorth complexity,
+  Petrosian fractal dimension, and Katz fractal dimension, with strict shared
+  validation, explicit degeneracy behavior, registry/extractor dispatch, and
+  installed-artifact smoke coverage.
+- Added independent formula oracles, invariance and boundary tests, and pinned
+  AntroPy comparisons. Petrosian zero-derivative plateaus deliberately remove
+  zero slopes before transition counting; this documented ABFE policy differs
+  from AntroPy's direct `signbit` transition count.
+- Specified all eight time-domain fractal/complexity features mapped from DIHC
+  Feature Manager plus a new Rosenstein largest Lyapunov exponent estimator
+  before beginning their staged implementation.
 - Froze proposed formulas, parameters, defaults, units, minimum-length rules,
   undefined-value behavior, invariances, provenance requirements, and
   independent reference-validation authorities in

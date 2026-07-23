@@ -35,6 +35,10 @@ EXPECTED_FEATURE_NAMES = (
     "fuzzy_entropy",
     "distribution_entropy",
     "svd_entropy",
+    "hjorth_mobility",
+    "hjorth_complexity",
+    "petrosian_fractal_dimension",
+    "katz_fractal_dimension",
     "peak_frequency",
     "mean_frequency",
     "median_frequency",
@@ -77,6 +81,14 @@ def test_select_features_returns_new_ordered_tuple_without_mutation() -> None:
     )
     assert tuple(FEATURE_REGISTRY) == before
     assert select_features() is not select_features()
+    complexity = select_features(domains=[FeatureDomain.COMPLEXITY])
+    assert tuple(spec.name for spec in complexity) == (
+        "hjorth_mobility",
+        "hjorth_complexity",
+        "petrosian_fractal_dimension",
+        "katz_fractal_dimension",
+    )
+    assert all(not spec.request_required for spec in complexity)
 
 
 def test_select_features_accepts_multiple_domains_in_registry_order() -> None:

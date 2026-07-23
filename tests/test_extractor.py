@@ -85,6 +85,21 @@ def test_signal_only_request_does_not_compute_psd(monkeypatch: pytest.MonkeyPatc
     assert result.failed_features == ()
 
 
+def test_extract_complexity_features_through_registry_dispatch() -> None:
+    signal, extractor = signal_and_extractor()
+    names = (
+        "hjorth_mobility",
+        "hjorth_complexity",
+        "petrosian_fractal_dimension",
+        "katz_fractal_dimension",
+    )
+    result = extractor.extract(signal, features=names)
+    assert tuple(result.values) == names
+    assert all(np.isfinite(value) for value in result.values.values())
+    assert result.failed_features == ()
+    assert result.provenance.psd_config is None
+
+
 def test_package_version_metadata_is_resolved_once_per_process(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

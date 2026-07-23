@@ -4,9 +4,10 @@ Amrita BioSignal Feature Engine (ABFE) is a typed, domain-neutral Python
 package for reproducible feature extraction from pre-windowed, one-dimensional
 biomedical signals.
 
-ABFE computes time-domain, frequency-domain, and entropy features. It does not
-segment, filter, round, or infer physiological frequency bands. Those choices
-remain explicit responsibilities of the caller's signal-processing pipeline.
+ABFE computes time-domain, frequency-domain, entropy, and
+fractal/complexity features. It does not segment, filter, round, or infer
+physiological frequency bands. Those choices remain explicit responsibilities
+of the caller's signal-processing pipeline.
 
 > The ABFE `v0.1.0` release candidate is frozen. Once the GitHub Release is
 > published, install its versioned artifact rather than a floating branch in
@@ -89,13 +90,15 @@ sampling frequency, signal length, and package version.
 
 ## Implemented features
 
-The immutable scalar registry contains 26 ordered features:
+The immutable scalar registry contains 30 ordered features:
 
 - Time domain: minimum, maximum, sum, mean, median, population standard
   deviation and variance, excess kurtosis, skewness, mean absolute value, RMS,
   peak-to-peak amplitude, integrated absolute value, waveform length,
   zero-crossing count, and slope-sign-change count.
 - Entropy: approximate, permutation, fuzzy, distribution, and SVD entropy.
+- Complexity: Hjorth mobility and complexity, Petrosian fractal dimension, and
+  Katz fractal dimension.
 - Frequency domain: peak, mean, and median frequency; SEF95; and spectral
   entropy.
 
@@ -116,6 +119,7 @@ explicit.
 | `amrita_biosignal_feature_engine.time_domain` | `minimum`, `maximum`, `sum_value`, `mean`, `median`, `standard_deviation`, `variance`, `kurtosis`, `skewness`, `mean_absolute_value`, `root_mean_square`, `peak_to_peak`, `integrated_absolute_value`, `waveform_length`, `zero_crossing_count`, `slope_sign_change_count` |
 | `amrita_biosignal_feature_engine.frequency_domain` | `peak_frequency`, `mean_frequency`, `median_frequency`, `spectral_edge_frequency`, `spectral_entropy`, `band_power`, `band_power_ratio` |
 | `amrita_biosignal_feature_engine.entropy` | `approximate_entropy`, `permutation_entropy`, `fuzzy_entropy`, `distribution_entropy`, `svd_entropy`, `sample_entropy_profile`, `SampleEntropyProfile` |
+| `amrita_biosignal_feature_engine.complexity` | `hjorth_mobility`, `hjorth_complexity`, `petrosian_fractal_dimension`, `katz_fractal_dimension` |
 | `amrita_biosignal_feature_engine.feature_registry` | `FEATURE_REGISTRY`, `DEFAULT_FEATURE_NAMES`, `FeatureSpec`, `FeatureDomain`, `FeatureInput`, `get_feature_spec`, `select_features` |
 | `amrita_biosignal_feature_engine.diagnostics` | `ABFEWarning`, `FrequencyResolutionWarning`, `DiagnosticSeverity`, `DiagnosticCode`, `FeatureDiagnostic` |
 | `amrita_biosignal_feature_engine.validation` | `validate_signal`, `validate_nonnegative_threshold` |
@@ -126,7 +130,8 @@ PSD to be reused without hidden spectral defaults.
 
 See the [complete API reference](docs/api-reference.md),
 [PSD definitions](docs/psd.md), [validation contract](docs/validation.md),
-[entropy validation](docs/entropy-validation.md), and
+[entropy validation](docs/entropy-validation.md),
+[complexity validation](docs/complexity-validation.md), and
 [API design](docs/api-design.md) for parameters, return values, exceptions,
 diagnostics, and numerical definitions.
 
@@ -140,8 +145,8 @@ python examples/api_smoke_test.py
 ```
 
 The script exercises the public extractor, direct time-domain, PSD,
-frequency-domain, entropy, registry, and batch APIs. A successful run ends
-with `ABFE API smoke test passed.`
+frequency-domain, entropy, complexity, registry, and batch APIs. A successful
+run ends with `ABFE API smoke test passed.`
 
 ## Failure and degeneracy policy
 
@@ -159,8 +164,9 @@ not perform reporting-time rounding.
 
 The offline suite covers definitions, invariants, invalid inputs, degeneracy,
 immutability, dispatch, diagnostics, and provenance. A separate CI job compares
-entropy and multitaper behavior against pinned external authorities, including
-AntroPy, MNE, `sampen-profile`, and the relevant DIHC reference implementations.
+entropy, complexity, and multitaper behavior against pinned external
+authorities, including AntroPy, MNE, `sampen-profile`, and the relevant DIHC
+reference implementations.
 External authorities are validation dependencies only and are not installed at
 runtime.
 

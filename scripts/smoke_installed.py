@@ -7,6 +7,12 @@ import argparse
 import numpy as np
 
 import amrita_biosignal_feature_engine as abfe
+from amrita_biosignal_feature_engine.complexity import (
+    hjorth_complexity,
+    hjorth_mobility,
+    katz_fractal_dimension,
+    petrosian_fractal_dimension,
+)
 from amrita_biosignal_feature_engine.entropy import (
     approximate_entropy,
     distribution_entropy,
@@ -60,6 +66,14 @@ def main() -> None:
         raise AssertionError("scalar entropy smoke calculation failed")
     if sample_entropy_profile(short_signal, order=2).point_count <= 0:
         raise AssertionError("sample-entropy profile smoke calculation failed")
+    complexity_values = (
+        hjorth_mobility(short_signal),
+        hjorth_complexity(short_signal),
+        petrosian_fractal_dimension(short_signal),
+        katz_fractal_dimension(short_signal),
+    )
+    if not all(np.isfinite(value) for value in complexity_values):
+        raise AssertionError("complexity smoke calculation failed")
 
     extractor = abfe.FeatureExtractor(abfe.ExtractorConfig(sampling_frequency, config))
     extracted = extractor.extract(

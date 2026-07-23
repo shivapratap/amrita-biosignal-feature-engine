@@ -58,6 +58,19 @@ Spectral entropy remains in `frequency_domain` because it consumes an explicit
 shared PSD. Entropy defaults and validation tolerances are described in
 `entropy-validation.md` and individual function docstrings.
 
+## Fractal and complexity functions
+
+`amrita_biosignal_feature_engine.complexity` exports:
+
+- `hjorth_mobility`
+- `hjorth_complexity`
+- `petrosian_fractal_dimension`
+- `katz_fractal_dimension`
+
+These functions consume raw validated signals. Their formulas, units,
+minimum-length rules, degeneracy behavior, and intentional Petrosian plateau
+policy are recorded in `complexity-validation.md`.
+
 ## Registry and diagnostics
 
 `amrita_biosignal_feature_engine.feature_registry` exposes immutable feature
