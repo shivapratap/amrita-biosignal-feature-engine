@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "amrita-biosignal-feature-engine"
-version = "0.1.0"
+version = "0.2.0.dev0"
 description = "Domain-neutral feature extraction for pre-windowed biomedical signals"
 readme = "README.md"
 requires-python = ">=3.10"

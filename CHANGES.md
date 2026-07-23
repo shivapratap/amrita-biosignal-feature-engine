@@ -5,7 +5,19 @@ before/after values, and a regression test.
 
 ## Unreleased
 
-No changes yet.
+### Fractal and complexity design
+
+- Opened the v0.2.0 development cycle at version `0.2.0.dev0`.
+- Specified, without yet implementing, eight time-domain fractal/complexity
+  features mapped from DIHC Feature Manager plus a new Rosenstein largest
+  Lyapunov exponent estimator.
+- Froze proposed formulas, parameters, defaults, units, minimum-length rules,
+  undefined-value behavior, invariances, provenance requirements, and
+  independent reference-validation authorities in
+  `docs/complexity-validation.md`.
+- Retained ABFE's strict policy: malformed inputs and parameters raise,
+  mathematically undefined estimates return `NaN`, and no failed computation
+  is replaced with a false `0.0`.
 
 ## 0.1.0 - 2026-07-23
 
