@@ -23,7 +23,7 @@ in the docstrings of the objects below.
 - `__version__`: installed distribution version obtained through
   `importlib.metadata`.
 
-These twelve names form the deliberately small top-level API. Scientific
+These thirteen names form the deliberately small top-level API. Scientific
 functions are submodule-only by design.
 
 ## Time-domain functions
@@ -70,6 +70,7 @@ shared PSD. Entropy defaults and validation tolerances are described in
 - `katz_fractal_dimension`
 - `higuchi_fractal_dimension`
 - `detrended_fluctuation_analysis`
+- `largest_lyapunov_exponent`
 
 These functions consume raw validated signals. Their formulas, units,
 minimum-length rules, degeneracy behavior, and intentional Petrosian plateau
@@ -85,6 +86,10 @@ not global registry mutations.
 `ExtractionProvenance.feature_parameters` is an immutable per-output mapping.
 It records canonical defaults for registered parameterized features and the
 resolved settings of explicit band requests.
+
+`LargestLyapunovRequest` is a top-level orchestration request. It requires the
+embedding dimension, delay, temporal exclusion, and half-open fit interval;
+the extractor supplies its configured sampling frequency.
 
 `amrita_biosignal_feature_engine.diagnostics` defines diagnostic codes,
 severities, immutable diagnostic records, and frequency-resolution warnings.

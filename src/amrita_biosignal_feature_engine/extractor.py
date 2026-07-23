@@ -23,6 +23,7 @@ from .complexity import (
     hjorth_complexity,
     hjorth_mobility,
     katz_fractal_dimension,
+    largest_lyapunov_exponent,
     lempel_ziv_complexity,
     petrosian_fractal_dimension,
 )
@@ -121,6 +122,42 @@ class BandPowerRatioRequest:
             "denominator_band",
             _validate_band(self.denominator_band, name="denominator_band"),
         )
+
+
+@dataclass(frozen=True, slots=True)
+class LargestLyapunovRequest:
+    """Explicit Rosenstein largest-Lyapunov-exponent output request."""
+
+    output_name: str
+    embedding_dimension: int
+    delay_samples: int
+    minimum_separation_samples: int
+    fit_start: int
+    fit_end: int
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "output_name", _validate_output_name(self.output_name))
+        for name, value, minimum in (
+            ("embedding_dimension", self.embedding_dimension, 2),
+            ("delay_samples", self.delay_samples, 1),
+            (
+                "minimum_separation_samples",
+                self.minimum_separation_samples,
+                0,
+            ),
+            ("fit_start", self.fit_start, 0),
+            ("fit_end", self.fit_end, 0),
+        ):
+            if isinstance(value, bool | np.bool_) or not isinstance(
+                value, int | np.integer
+            ):
+                raise TypeError(f"{name} must be an integer")
+            resolved = int(value)
+            if resolved < minimum:
+                raise ValueError(f"{name} must be at least {minimum}")
+            object.__setattr__(self, name, resolved)
+        if self.fit_end < self.fit_start + 3:
+            raise ValueError("fit_end must be at least fit_start + 3")
 
 
 @dataclass(frozen=True, slots=True)
@@ -300,14 +337,16 @@ class BatchExtractionResult:
         return tuple(self.rows[0].values) if self.rows else ()
 
 
-FeatureRequest: TypeAlias = str | BandPowerRequest | BandPowerRatioRequest
+FeatureRequest: TypeAlias = (
+    str | BandPowerRequest | BandPowerRatioRequest | LargestLyapunovRequest
+)
 
 
 @dataclass(frozen=True, slots=True)
 class _ResolvedFeature:
     output_name: str
     registered_name: str | None
-    request: BandPowerRequest | BandPowerRatioRequest | None
+    request: BandPowerRequest | BandPowerRatioRequest | LargestLyapunovRequest | None
     input_kind: FeatureInput
 
 
@@ -360,7 +399,12 @@ _PSD_DISPATCH: Mapping[str, ScalarPSDFunction] = MappingProxyType(
     }
 )
 
-if set(_SIGNAL_DISPATCH) | set(_PSD_DISPATCH) != set(FEATURE_REGISTRY):
+_REQUEST_DISPATCH_NAMES = frozenset({"largest_lyapunov_exponent"})
+
+if (
+    set(_SIGNAL_DISPATCH) | set(_PSD_DISPATCH) | _REQUEST_DISPATCH_NAMES
+    != set(FEATURE_REGISTRY)
+):
     raise RuntimeError("extractor dispatch and feature registry are inconsistent")
 
 
@@ -385,9 +429,18 @@ def _resolve_features(features: Iterable[FeatureRequest]) -> tuple[_ResolvedFeat
             resolved.append(_ResolvedFeature(item, item, None, spec.input_kind))
         elif isinstance(item, BandPowerRequest | BandPowerRatioRequest):
             resolved.append(_ResolvedFeature(item.output_name, None, item, FeatureInput.PSD))
+        elif isinstance(item, LargestLyapunovRequest):
+            resolved.append(
+                _ResolvedFeature(
+                    item.output_name,
+                    "largest_lyapunov_exponent",
+                    item,
+                    FeatureInput.SIGNAL,
+                )
+            )
         else:
             raise TypeError(
-                "features must contain strings, BandPowerRequest, or BandPowerRatioRequest"
+                "features must contain strings or supported feature request objects"
             )
     output_names = tuple(item.output_name for item in resolved)
     if len(set(output_names)) != len(output_names):
@@ -399,6 +452,7 @@ def _feature_parameters(
     resolved: tuple[_ResolvedFeature, ...],
     *,
     signal_length: int | None,
+    sampling_frequency: float,
 ) -> Mapping[str, Mapping[str, object]]:
     parameters: dict[str, Mapping[str, object]] = {}
     for item in resolved:
@@ -425,6 +479,18 @@ def _feature_parameters(
                     detrend_order=1,
                 )
             parameters[item.output_name] = dfa_parameters
+        elif isinstance(item.request, LargestLyapunovRequest):
+            parameters[item.output_name] = {
+                "sampling_frequency": sampling_frequency,
+                "embedding_dimension": item.request.embedding_dimension,
+                "delay_samples": item.request.delay_samples,
+                "minimum_separation_samples": (
+                    item.request.minimum_separation_samples
+                ),
+                "fit_start": item.request.fit_start,
+                "fit_end": item.request.fit_end,
+                "output_units": "s^-1",
+            }
         elif isinstance(item.request, BandPowerRequest):
             parameters[item.output_name] = {
                 "band": item.request.band,
@@ -530,6 +596,23 @@ class FeatureExtractor:
             raise RuntimeError("resolved PSD feature has no dispatch name")
         return _PSD_DISPATCH[item.registered_name](psd)
 
+    def _compute_signal_feature(
+        self, item: _ResolvedFeature, data: FloatArray
+    ) -> float:
+        if isinstance(item.request, LargestLyapunovRequest):
+            return largest_lyapunov_exponent(
+                data,
+                sampling_frequency=self.config.sampling_frequency,
+                embedding_dimension=item.request.embedding_dimension,
+                delay_samples=item.request.delay_samples,
+                minimum_separation_samples=item.request.minimum_separation_samples,
+                fit_start=item.request.fit_start,
+                fit_end=item.request.fit_end,
+            )
+        if item.registered_name is None:
+            raise RuntimeError("resolved signal feature has no dispatch name")
+        return _SIGNAL_DISPATCH[item.registered_name](data)
+
     def extract(
         self,
         signal: ArrayLike,
@@ -573,8 +656,7 @@ class FeatureExtractor:
                 with warnings.catch_warnings(record=True) as captured:
                     warnings.simplefilter("always", FrequencyResolutionWarning)
                     if item.input_kind is FeatureInput.SIGNAL:
-                        assert item.registered_name is not None
-                        value = float(_SIGNAL_DISPATCH[item.registered_name](data))
+                        value = float(self._compute_signal_feature(item, data))
                     else:
                         assert psd is not None
                         value = float(self._compute_psd_feature(item, psd))
@@ -611,7 +693,9 @@ class FeatureExtractor:
             psd_effective_bandwidth=psd.effective_bandwidth if psd is not None else None,
             psd_segment_count=psd.segment_count if psd is not None else None,
             feature_parameters=_feature_parameters(
-                resolved, signal_length=int(data.size)
+                resolved,
+                signal_length=int(data.size),
+                sampling_frequency=self.config.sampling_frequency,
             ),
         )
         return ExtractionResult(values, tuple(diagnostics), provenance)
@@ -645,7 +729,9 @@ class FeatureExtractor:
             self.config.sampling_frequency,
             names,
             feature_parameters=_feature_parameters(
-                resolved, signal_length=signal_length
+                resolved,
+                signal_length=signal_length,
+                sampling_frequency=self.config.sampling_frequency,
             ),
         )
         return ExtractionResult(values, diagnostics, provenance)
@@ -677,4 +763,5 @@ __all__ = [
     "ExtractionResult",
     "ExtractorConfig",
     "FeatureExtractor",
+    "LargestLyapunovRequest",
 ]

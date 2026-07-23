@@ -182,6 +182,13 @@ _FEATURE_SPECS = (
         "Detrended-fluctuation scaling exponent.",
     ),
     _spec(
+        "largest_lyapunov_exponent",
+        FeatureDomain.COMPLEXITY,
+        FeatureInput.SIGNAL,
+        "Rosenstein largest Lyapunov exponent in inverse seconds.",
+        request_required=True,
+    ),
+    _spec(
         "peak_frequency", FeatureDomain.FREQUENCY, FeatureInput.PSD, "Frequency of maximum PSD."
     ),
     _spec(

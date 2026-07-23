@@ -398,6 +398,112 @@ def detrended_fluctuation_analysis(
     return slope if np.isfinite(slope) else float("nan")
 
 
+def largest_lyapunov_exponent(
+    signal: ArrayLike,
+    *,
+    sampling_frequency: float,
+    embedding_dimension: int,
+    delay_samples: int,
+    minimum_separation_samples: int,
+    fit_start: int,
+    fit_end: int,
+) -> float:
+    """Estimate the largest Lyapunov exponent with Rosenstein's method.
+
+    All reconstruction, temporal-exclusion, and half-open fit-interval
+    parameters are explicit. The fitted slope uses time in seconds and is
+    returned in inverse seconds.
+    """
+    sampling_frequency = _validate_real(
+        sampling_frequency,
+        name="sampling_frequency",
+        minimum_exclusive=0.0,
+    )
+    embedding_dimension = _validate_integer(
+        embedding_dimension, name="embedding_dimension", minimum=2
+    )
+    delay_samples = _validate_integer(
+        delay_samples, name="delay_samples", minimum=1
+    )
+    minimum_separation_samples = _validate_integer(
+        minimum_separation_samples,
+        name="minimum_separation_samples",
+        minimum=0,
+    )
+    fit_start = _validate_integer(fit_start, name="fit_start", minimum=0)
+    fit_end = _validate_integer(fit_end, name="fit_end", minimum=0)
+    if fit_end < fit_start + 3:
+        raise ValueError("fit_end must be at least fit_start + 3")
+    minimum_length = (
+        (embedding_dimension - 1) * delay_samples
+        + fit_end
+        + 2 * minimum_separation_samples
+        + 2
+    )
+    data = validate_signal(signal, minimum_length=minimum_length)
+    centered = data - np.mean(data)
+    vector_count = centered.size - (embedding_dimension - 1) * delay_samples
+    embedded = np.column_stack(
+        [
+            centered[
+                coordinate * delay_samples : coordinate * delay_samples
+                + vector_count
+            ]
+            for coordinate in range(embedding_dimension)
+        ]
+    )
+
+    neighbor_pairs: list[tuple[int, int]] = []
+    indices = np.arange(vector_count)
+    for reference_index in range(vector_count):
+        admissible = (
+            np.abs(indices - reference_index) > minimum_separation_samples
+        )
+        if not np.any(admissible):
+            continue
+        distances = np.linalg.norm(
+            embedded - embedded[reference_index], axis=1
+        )
+        distances[~admissible] = np.inf
+        neighbor_index = int(np.argmin(distances))
+        if np.isfinite(distances[neighbor_index]) and distances[neighbor_index] > 0.0:
+            neighbor_pairs.append((reference_index, neighbor_index))
+
+    valid_steps: list[float] = []
+    mean_log_distances: list[float] = []
+    for step in range(fit_start, fit_end):
+        log_distances: list[float] = []
+        for reference_index, neighbor_index in neighbor_pairs:
+            if (
+                reference_index + step >= vector_count
+                or neighbor_index + step >= vector_count
+            ):
+                continue
+            separation = float(
+                np.linalg.norm(
+                    embedded[reference_index + step]
+                    - embedded[neighbor_index + step]
+                )
+            )
+            if np.isfinite(separation) and separation > 0.0:
+                log_distances.append(float(np.log(separation)))
+        if len(log_distances) >= 2:
+            valid_steps.append(step / sampling_frequency)
+            mean_log_distances.append(float(np.mean(log_distances)))
+    if len(valid_steps) < 3:
+        return float("nan")
+    predictor = np.asarray(valid_steps)
+    response = np.asarray(mean_log_distances)
+    centered_predictor = predictor - np.mean(predictor)
+    denominator = float(np.sum(centered_predictor**2))
+    if denominator == 0.0:
+        return float("nan")
+    slope = float(
+        np.sum(centered_predictor * (response - np.mean(response))) / denominator
+    )
+    return slope if np.isfinite(slope) else float("nan")
+
+
 __all__ = [
     "detrended_fluctuation_analysis",
     "fisher_information",
@@ -406,5 +512,6 @@ __all__ = [
     "hjorth_mobility",
     "katz_fractal_dimension",
     "lempel_ziv_complexity",
+    "largest_lyapunov_exponent",
     "petrosian_fractal_dimension",
 ]

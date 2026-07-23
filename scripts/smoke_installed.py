@@ -14,6 +14,7 @@ from amrita_biosignal_feature_engine.complexity import (
     hjorth_complexity,
     hjorth_mobility,
     katz_fractal_dimension,
+    largest_lyapunov_exponent,
     lempel_ziv_complexity,
     petrosian_fractal_dimension,
 )
@@ -79,6 +80,15 @@ def main() -> None:
         fisher_information(short_signal),
         higuchi_fractal_dimension(short_signal),
         detrended_fluctuation_analysis(short_signal),
+        largest_lyapunov_exponent(
+            short_signal,
+            sampling_frequency=sampling_frequency,
+            embedding_dimension=3,
+            delay_samples=2,
+            minimum_separation_samples=5,
+            fit_start=0,
+            fit_end=6,
+        ),
     )
     if not all(np.isfinite(value) for value in complexity_values):
         raise AssertionError("complexity smoke calculation failed")
@@ -86,7 +96,12 @@ def main() -> None:
     extractor = abfe.FeatureExtractor(abfe.ExtractorConfig(sampling_frequency, config))
     extracted = extractor.extract(
         signal,
-        features=("root_mean_square", "approximate_entropy", "spectral_entropy"),
+        features=(
+            "root_mean_square",
+            "approximate_entropy",
+            "spectral_entropy",
+            abfe.LargestLyapunovRequest("largest_lyapunov_s_inverse", 3, 2, 5, 0, 6),
+        ),
     )
     batch = extractor.extract_batch(
         (signal, signal),

@@ -5,9 +5,8 @@ features mapped from DIHC Feature Manager and one new
 largest-Lyapunov-exponent feature. Lempel–Ziv complexity, Hjorth mobility,
 Hjorth complexity, SVD-spectrum Fisher information, Petrosian fractal
 dimension, Katz fractal dimension, and Higuchi fractal dimension are
-implemented, as is detrended fluctuation analysis. The remaining largest
-Lyapunov exponent definition is a design specification and is not yet an
-implementation claim.
+implemented, as are detrended fluctuation analysis and the largest Lyapunov
+exponent. All nine planned definitions are now implemented.
 
 The nine planned public function names are:
 
@@ -436,11 +435,11 @@ two-scale estimate.
 
 ### Scope and method
 
-ABFE will estimate only the **largest** Lyapunov exponent with the Rosenstein,
+ABFE estimates only the **largest** Lyapunov exponent with the Rosenstein,
 Collins, and De Luca method. It will not claim to calculate a full Lyapunov
 spectrum.
 
-The direct function will require all scientifically consequential parameters:
+The direct function requires all scientifically consequential parameters:
 
 ```text
 largest_lyapunov_exponent(
@@ -517,17 +516,17 @@ positive estimate alone is not sufficient evidence of deterministic chaos.
 - Rosenstein, Collins, and De Luca, *A practical method for calculating
   largest Lyapunov exponents from small data sets*, Physica D 65, 1993, DOI
   [10.1016/0167-2789(93)90009-P](https://doi.org/10.1016/0167-2789(93)90009-P).
-- A pinned independent Rosenstein implementation used only in reference CI.
+- Pinned `nolds 0.6.2` `lyap_r`, configured with equivalent explicit
+  Rosenstein parameters and ordinary polynomial fitting.
 - Independent literal nearest-neighbor/divergence/regression oracles.
 - Synthetic periodic, quasiperiodic, logistic-map, and Lorenz-system cases
   with fixed seeds and documented sampling conventions.
 
 ## Registry and extractor policy
 
-The implemented DIHC-mapped names are registered with the snake-case
-identifiers at the beginning of this document. Registry metadata identifies
-`FeatureDomain.COMPLEXITY` and `FeatureInput.SIGNAL`; the remaining names will
-be added only when their implementations and validation land.
+All nine names are registered with the snake-case identifiers at the beginning
+of this document. Registry metadata identifies `FeatureDomain.COMPLEXITY` and
+`FeatureInput.SIGNAL`.
 
 The parameter-free Hjorth, Petrosian, and Katz features may be requested by
 registry name. Lempel-Ziv, Fisher information, Higuchi fractal dimension, and
@@ -535,7 +534,7 @@ DFA will use documented canonical defaults for name-only extraction and will
 also expose direct function parameters.
 
 `FeatureSpec` has an immutable `request_required: bool = False` field.
-The `largest_lyapunov_exponent` specification will set it to `True`, remain
+The `largest_lyapunov_exponent` specification sets it to `True`, remains
 discoverable in `FEATURE_REGISTRY`, and be excluded from
 `DEFAULT_FEATURE_NAMES`. Passing its bare registry string to extraction will
 raise a descriptive `ValueError`.

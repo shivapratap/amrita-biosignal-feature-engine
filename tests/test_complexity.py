@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from typing import TypedDict
 
 import numpy as np
 import pytest
@@ -14,9 +15,19 @@ from amrita_biosignal_feature_engine.complexity import (
     hjorth_complexity,
     hjorth_mobility,
     katz_fractal_dimension,
+    largest_lyapunov_exponent,
     lempel_ziv_complexity,
     petrosian_fractal_dimension,
 )
+
+
+class _LyapunovParameters(TypedDict):
+    sampling_frequency: float
+    embedding_dimension: int
+    delay_samples: int
+    minimum_separation_samples: int
+    fit_start: int
+    fit_end: int
 
 
 def _manual_hjorth(signal: np.ndarray) -> tuple[float, float]:
@@ -365,6 +376,223 @@ def test_dfa_rejects_invalid_generator_and_detrending_parameters() -> None:
     with pytest.raises(ValueError, match="at least 50"):
         detrended_fluctuation_analysis(np.arange(49.0))
     assert isinstance(detrended_fluctuation_analysis(np.arange(50.0)), float)
+
+
+def _literal_lyapunov_oracle(
+    signal: np.ndarray,
+    *,
+    sampling_frequency: float,
+    embedding_dimension: int,
+    delay_samples: int,
+    minimum_separation_samples: int,
+    fit_start: int,
+    fit_end: int,
+) -> float:
+    centered = signal - np.mean(signal)
+    vector_count = signal.size - (embedding_dimension - 1) * delay_samples
+    embedded = np.asarray(
+        [
+            [
+                centered[index + coordinate * delay_samples]
+                for coordinate in range(embedding_dimension)
+            ]
+            for index in range(vector_count)
+        ]
+    )
+    distance_matrix = np.sqrt(
+        np.sum((embedded[:, None, :] - embedded[None, :, :]) ** 2, axis=2)
+    )
+    pairs: list[tuple[int, int]] = []
+    for reference in range(vector_count):
+        candidates = [
+            index
+            for index in range(vector_count)
+            if abs(index - reference) > minimum_separation_samples
+            and distance_matrix[reference, index] > 0.0
+        ]
+        if candidates:
+            neighbor = min(
+                candidates, key=lambda index: distance_matrix[reference, index]
+            )
+            pairs.append((reference, neighbor))
+    times: list[float] = []
+    divergence: list[float] = []
+    for step in range(fit_start, fit_end):
+        logs = [
+            np.log(distance_matrix[left + step, right + step])
+            for left, right in pairs
+            if left + step < vector_count
+            and right + step < vector_count
+            and distance_matrix[left + step, right + step] > 0.0
+        ]
+        if len(logs) >= 2:
+            times.append(step / sampling_frequency)
+            divergence.append(float(np.mean(logs)))
+    design = np.column_stack((np.ones(len(times)), times))
+    coefficients, _, _, _ = np.linalg.lstsq(
+        design, np.asarray(divergence), rcond=None
+    )
+    return float(coefficients[1])
+
+
+def _logistic_signal(length: int, *, parameter: float = 4.0) -> np.ndarray:
+    values = np.empty(length + 500)
+    values[0] = 0.123456789
+    for index in range(values.size - 1):
+        values[index + 1] = parameter * values[index] * (1.0 - values[index])
+    return values[500:]
+
+
+def _lorenz_x_signal(length: int, *, step_seconds: float = 0.01) -> np.ndarray:
+    states = np.empty((length + 1000, 3))
+    states[0] = (1.0, 1.0, 1.0)
+
+    def derivative(state: np.ndarray) -> np.ndarray:
+        x_value, y_value, z_value = state
+        return np.array(
+            (
+                10.0 * (y_value - x_value),
+                x_value * (28.0 - z_value) - y_value,
+                x_value * y_value - (8.0 / 3.0) * z_value,
+            )
+        )
+
+    for index in range(states.shape[0] - 1):
+        state = states[index]
+        first = derivative(state)
+        second = derivative(state + step_seconds * first / 2.0)
+        third = derivative(state + step_seconds * second / 2.0)
+        fourth = derivative(state + step_seconds * third)
+        states[index + 1] = state + step_seconds * (
+            first + 2.0 * second + 2.0 * third + fourth
+        ) / 6.0
+    return states[1000:, 0]
+
+
+def test_largest_lyapunov_matches_independent_distance_matrix_oracle() -> None:
+    signal = _logistic_signal(300)
+    parameters: _LyapunovParameters = {
+        "sampling_frequency": 1.0,
+        "embedding_dimension": 3,
+        "delay_samples": 1,
+        "minimum_separation_samples": 10,
+        "fit_start": 0,
+        "fit_end": 6,
+    }
+    assert largest_lyapunov_exponent(signal, **parameters) == pytest.approx(
+        _literal_lyapunov_oracle(signal, **parameters), abs=2e-14
+    )
+
+
+def test_largest_lyapunov_synthetic_behavior_and_invariances() -> None:
+    chaotic = _logistic_signal(1000)
+    parameters: _LyapunovParameters = {
+        "sampling_frequency": 1.0,
+        "embedding_dimension": 3,
+        "delay_samples": 1,
+        "minimum_separation_samples": 20,
+        "fit_start": 0,
+        "fit_end": 6,
+    }
+    estimate = largest_lyapunov_exponent(chaotic, **parameters)
+    assert 0.4 < estimate < 0.9
+    assert largest_lyapunov_exponent(3.0 * chaotic + 10.0, **parameters) == pytest.approx(
+        estimate, abs=2e-13
+    )
+    assert largest_lyapunov_exponent(-2.0 * chaotic, **parameters) == pytest.approx(
+        estimate, abs=2e-13
+    )
+    faster: _LyapunovParameters = {
+        **parameters,
+        "sampling_frequency": 2.0,
+    }
+    assert largest_lyapunov_exponent(chaotic, **faster) == pytest.approx(
+        2.0 * estimate, abs=2e-13
+    )
+    periodic = np.sin(np.linspace(0.0, 80.0 * np.pi, 1000, endpoint=False))
+    assert np.isfinite(largest_lyapunov_exponent(periodic, **parameters))
+    time = np.arange(1000)
+    quasiperiodic = np.sin(0.11 * time) + np.sin(np.sqrt(2.0) * 0.11 * time)
+    assert np.isfinite(largest_lyapunov_exponent(quasiperiodic, **parameters))
+
+
+def test_largest_lyapunov_is_positive_for_seeded_lorenz_x_trajectory() -> None:
+    signal = _lorenz_x_signal(3000)
+    estimate = largest_lyapunov_exponent(
+        signal,
+        sampling_frequency=100.0,
+        embedding_dimension=6,
+        delay_samples=10,
+        minimum_separation_samples=100,
+        fit_start=0,
+        fit_end=10,
+    )
+    assert 0.3 < estimate < 2.0
+
+
+def test_largest_lyapunov_validation_minimum_length_and_degeneracy() -> None:
+    parameters: _LyapunovParameters = {
+        "sampling_frequency": 100.0,
+        "embedding_dimension": 3,
+        "delay_samples": 2,
+        "minimum_separation_samples": 4,
+        "fit_start": 1,
+        "fit_end": 6,
+    }
+    minimum_length = 20
+    with pytest.raises(ValueError, match="at least 20"):
+        largest_lyapunov_exponent(np.arange(minimum_length - 1.0), **parameters)
+    assert isinstance(
+        largest_lyapunov_exponent(np.arange(float(minimum_length)), **parameters),
+        float,
+    )
+    assert np.isnan(largest_lyapunov_exponent(np.ones(minimum_length), **parameters))
+    with pytest.raises(ValueError, match="fit_end"):
+        largest_lyapunov_exponent(
+            np.arange(100.0),
+            sampling_frequency=100.0,
+            embedding_dimension=3,
+            delay_samples=2,
+            minimum_separation_samples=4,
+            fit_start=1,
+            fit_end=3,
+        )
+    with pytest.raises(ValueError, match="sampling_frequency"):
+        largest_lyapunov_exponent(
+            np.arange(100.0), sampling_frequency=0.0,
+            embedding_dimension=3, delay_samples=2,
+            minimum_separation_samples=4, fit_start=1, fit_end=6,
+        )
+    with pytest.raises(ValueError, match="embedding_dimension"):
+        largest_lyapunov_exponent(
+            np.arange(100.0), sampling_frequency=100.0,
+            embedding_dimension=1, delay_samples=2,
+            minimum_separation_samples=4, fit_start=1, fit_end=6,
+        )
+    with pytest.raises(ValueError, match="delay_samples"):
+        largest_lyapunov_exponent(
+            np.arange(100.0), sampling_frequency=100.0,
+            embedding_dimension=3, delay_samples=0,
+            minimum_separation_samples=4, fit_start=1, fit_end=6,
+        )
+    with pytest.raises(ValueError, match="minimum_separation_samples"):
+        largest_lyapunov_exponent(
+            np.arange(100.0), sampling_frequency=100.0,
+            embedding_dimension=3, delay_samples=2,
+            minimum_separation_samples=-1, fit_start=1, fit_end=6,
+        )
+    with pytest.raises(ValueError, match="fit_start"):
+        largest_lyapunov_exponent(
+            np.arange(100.0), sampling_frequency=100.0,
+            embedding_dimension=3, delay_samples=2,
+            minimum_separation_samples=4, fit_start=-1, fit_end=6,
+        )
+    with pytest.raises(TypeError, match="embedding_dimension"):
+        largest_lyapunov_exponent(
+            np.arange(100.0), sampling_frequency=100.0,
+            embedding_dimension=True, delay_samples=2,
+            minimum_separation_samples=4, fit_start=1, fit_end=6,
+        )
 
 
 @pytest.mark.parametrize(

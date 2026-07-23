@@ -11,6 +11,7 @@ from amrita_biosignal_feature_engine import (
     BandPowerRequest,
     ExtractorConfig,
     FeatureExtractor,
+    LargestLyapunovRequest,
     WelchPSDConfig,
     __version__,
     compute_psd,
@@ -22,6 +23,7 @@ from amrita_biosignal_feature_engine.complexity import (
     fisher_information,
     higuchi_fractal_dimension,
     hjorth_mobility,
+    largest_lyapunov_exponent,
     lempel_ziv_complexity,
 )
 from amrita_biosignal_feature_engine.entropy import (
@@ -54,6 +56,15 @@ def main() -> None:
     fisher = fisher_information(signal)
     higuchi = higuchi_fractal_dimension(signal)
     dfa = detrended_fluctuation_analysis(signal)
+    lyapunov = largest_lyapunov_exponent(
+        signal,
+        sampling_frequency=sampling_frequency,
+        embedding_dimension=3,
+        delay_samples=2,
+        minimum_separation_samples=10,
+        fit_start=0,
+        fit_end=6,
+    )
     profile = sample_entropy_profile(signal)
 
     extractor = FeatureExtractor(ExtractorConfig(sampling_frequency, psd_config))
@@ -64,6 +75,7 @@ def main() -> None:
         "spectral_entropy",
         BandPowerRequest("power_8_12_hz", (8.0, 12.0)),
         BandPowerRatioRequest("power_8_12_over_20_30", (8.0, 12.0), (20.0, 30.0)),
+        LargestLyapunovRequest("largest_lyapunov_s_inverse", 3, 2, 10, 0, 6),
     )
     result = extractor.extract(signal, features=requests)
     batch = extractor.extract_batch((signal, signal * 0.5), features=requests)
@@ -79,6 +91,7 @@ def main() -> None:
         fisher,
         higuchi,
         dfa,
+        lyapunov,
     )
     assert all(math.isfinite(value) for value in direct_values)
     assert abs(peak_hz - 10.0) <= psd.bin_spacing

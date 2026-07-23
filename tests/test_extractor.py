@@ -12,6 +12,7 @@ from amrita_biosignal_feature_engine import (
     BandPowerRequest,
     ExtractorConfig,
     FeatureExtractor,
+    LargestLyapunovRequest,
     MultitaperPSDConfig,
     WelchPSDConfig,
 )
@@ -113,6 +114,34 @@ def test_extract_complexity_features_through_registry_dispatch() -> None:
             "detrend_order": 1,
             "scales": (4, 5, 6, 8, 9, 11, 14, 17, 20, 24, 29, 35),
         },
+    }
+
+
+def test_largest_lyapunov_requires_explicit_request_and_records_provenance() -> None:
+    signal, extractor = signal_and_extractor()
+    request = LargestLyapunovRequest(
+        "largest_lyapunov_s_inverse",
+        embedding_dimension=3,
+        delay_samples=2,
+        minimum_separation_samples=10,
+        fit_start=0,
+        fit_end=6,
+    )
+    with pytest.raises(ValueError, match="explicit request"):
+        extractor.extract(signal, features=("largest_lyapunov_exponent",))
+    result = extractor.extract(signal, features=(request,))
+    assert tuple(result.values) == ("largest_lyapunov_s_inverse",)
+    assert np.isfinite(result.values["largest_lyapunov_s_inverse"])
+    assert result.provenance.feature_parameters == {
+        "largest_lyapunov_s_inverse": {
+            "sampling_frequency": 100.0,
+            "embedding_dimension": 3,
+            "delay_samples": 2,
+            "minimum_separation_samples": 10,
+            "fit_start": 0,
+            "fit_end": 6,
+            "output_units": "s^-1",
+        }
     }
 
 

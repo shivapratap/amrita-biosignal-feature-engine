@@ -46,6 +46,16 @@ before/after values, and a regression test.
   seeded white-noise and random-walk checks, affine invariance, and equivalent
   pinned AntroPy/DIHC comparisons. For 50–57 samples, ABFE deliberately uses
   two scales instead of reproducing the references' false one-point `0.0`.
+- Implemented the Rosenstein largest Lyapunov exponent with fully explicit
+  reconstruction, temporal-exclusion, half-open fit-region, and sampling-rate
+  parameters; no scientific defaults or positive-slope threshold are inferred.
+- Added the frozen request-only registry policy, `LargestLyapunovRequest`,
+  inverse-seconds output, complete immutable provenance, conservative
+  minimum-length validation, and undefined-neighbor/divergence handling.
+- Validated against an independent full-distance-matrix oracle, seeded
+  periodic, quasiperiodic, logistic-map, and RK4 Lorenz trajectories, and
+  pinned `nolds 0.6.2`; both Rosenstein implementations recover the logistic
+  map's theoretical `ln(2)` exponent within `0.01`.
 - Specified all eight time-domain fractal/complexity features mapped from DIHC
   Feature Manager plus a new Rosenstein largest Lyapunov exponent estimator
   before beginning their staged implementation.

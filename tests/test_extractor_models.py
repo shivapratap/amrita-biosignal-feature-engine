@@ -12,6 +12,7 @@ from amrita_biosignal_feature_engine import (
     ExtractionProvenance,
     ExtractionResult,
     ExtractorConfig,
+    LargestLyapunovRequest,
     WelchPSDConfig,
 )
 from amrita_biosignal_feature_engine.diagnostics import (
@@ -53,6 +54,20 @@ def test_band_ratio_request_preserves_explicit_direction() -> None:
     request = BandPowerRatioRequest("low_over_high", (8, 12), (20, 30))
     assert request.numerator_band == (8.0, 12.0)
     assert request.denominator_band == (20.0, 30.0)
+
+
+def test_largest_lyapunov_request_is_frozen_and_validated() -> None:
+    request = LargestLyapunovRequest("lyapunov", 3, 2, 10, 1, 8)
+    assert request.embedding_dimension == 3
+    assert request.fit_end == 8
+    with pytest.raises(FrozenInstanceError):
+        request.fit_end = 9  # type: ignore[misc]
+    with pytest.raises(ValueError, match="fit_end"):
+        LargestLyapunovRequest("lyapunov", 3, 2, 10, 1, 3)
+    with pytest.raises(TypeError, match="embedding_dimension"):
+        LargestLyapunovRequest("lyapunov", True, 2, 10, 1, 8)
+    with pytest.raises(ValueError, match="minimum_separation_samples"):
+        LargestLyapunovRequest("lyapunov", 3, 2, -1, 1, 8)
 
 
 @pytest.mark.parametrize("name", ["", " name", "name "])

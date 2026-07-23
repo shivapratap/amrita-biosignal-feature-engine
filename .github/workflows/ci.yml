@@ -75,7 +75,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: python -m pip install --upgrade pip
-      - run: python -m pip install -e ".[dev]" "antropy==0.2.2" "mne==1.12.1"
+      - run: python -m pip install -e ".[dev]" "antropy==0.2.2" "mne==1.12.1" "nolds==0.6.2"
       - name: Install pinned sampen-profile authority
         run: python -m pip install "git+https://github.com/shivapratap/sampen-profile.git@263b72f7b906208241291c0579e8ec103fb52d79"
       - name: Install pinned DIHC comparison reference

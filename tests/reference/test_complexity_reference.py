@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import os
 from importlib import util
-from importlib.metadata import distribution
+from importlib.metadata import distribution, version
 from pathlib import Path
 from types import ModuleType
 from urllib.parse import unquote, urlparse
@@ -19,6 +19,7 @@ from amrita_biosignal_feature_engine.complexity import (
     hjorth_complexity,
     hjorth_mobility,
     katz_fractal_dimension,
+    largest_lyapunov_exponent,
     lempel_ziv_complexity,
     petrosian_fractal_dimension,
 )
@@ -62,6 +63,22 @@ def _load_pinned_dihc_complexity() -> ModuleType:
 
 dihc_complexity = _load_pinned_dihc_complexity()
 
+
+def _load_pinned_nolds_measures() -> ModuleType:
+    if version("nolds") != "0.6.2":
+        raise RuntimeError("largest-Lyapunov reference requires nolds 0.6.2")
+    installed = distribution("nolds")
+    path = Path(str(installed.locate_file("nolds/measures.py")))
+    spec = util.spec_from_file_location("_abfe_pinned_nolds_measures", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load pinned nolds reference from {path}")
+    module = util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+nolds_measures = _load_pinned_nolds_measures()
+
 pytestmark = pytest.mark.reference
 
 
@@ -72,6 +89,14 @@ def required_signals() -> dict[str, NDArray[np.float64]]:
         "white_noise": np.random.default_rng(321).normal(size=128),
         "chirp": np.sin(2.0 * np.pi * (2.0 * time + 10.0 * time**2)),
     }
+
+
+def logistic_signal(length: int) -> NDArray[np.float64]:
+    values = np.empty(length + 500)
+    values[0] = 0.123456789
+    for index in range(values.size - 1):
+        values[index + 1] = 4.0 * values[index] * (1.0 - values[index])
+    return values[500:]
 
 
 @pytest.mark.parametrize("name", ["periodic", "white_noise", "chirp"])
@@ -170,6 +195,32 @@ def test_constant_dfa_degeneracy_matches_references() -> None:
     assert np.isnan(detrended_fluctuation_analysis(signal))
     assert np.isnan(antropy.detrended_fluctuation(signal))
     assert np.isnan(dihc_complexity.detrended_fluctuation_feature(signal))
+
+
+def test_largest_lyapunov_matches_pinned_rosenstein_authority_on_logistic_map() -> None:
+    signal = logistic_signal(1000)
+    actual = largest_lyapunov_exponent(
+        signal,
+        sampling_frequency=1.0,
+        embedding_dimension=3,
+        delay_samples=1,
+        minimum_separation_samples=20,
+        fit_start=0,
+        fit_end=6,
+    )
+    expected = nolds_measures.lyap_r(
+        signal,
+        emb_dim=3,
+        lag=1,
+        min_tsep=20,
+        tau=1.0,
+        trajectory_len=6,
+        fit="poly",
+        fit_offset=0,
+    )
+    assert actual == pytest.approx(np.log(2.0), abs=0.01)
+    assert expected == pytest.approx(np.log(2.0), abs=0.01)
+    assert actual == pytest.approx(expected, abs=0.01)
 
 
 @pytest.mark.parametrize("name", ["periodic", "white_noise", "chirp"])
