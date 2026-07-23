@@ -10,6 +10,7 @@ from amrita_biosignal_feature_engine.complexity import (
     hjorth_complexity,
     hjorth_mobility,
     katz_fractal_dimension,
+    lempel_ziv_complexity,
     petrosian_fractal_dimension,
 )
 
@@ -28,6 +29,19 @@ def required_signals() -> dict[str, NDArray[np.float64]]:
         "white_noise": np.random.default_rng(321).normal(size=128),
         "chirp": np.sin(2.0 * np.pi * (2.0 * time + 10.0 * time**2)),
     }
+
+
+@pytest.mark.parametrize("name", ["periodic", "white_noise", "chirp"])
+@pytest.mark.parametrize("normalize", [False, True])
+def test_lempel_ziv_matches_antropy_on_abfe_median_binary_sequence(
+    name: str, normalize: bool
+) -> None:
+    signal = required_signals()[name]
+    binary = (signal >= np.median(signal)).astype(np.uint8)
+    expected = antropy.lziv_complexity(binary, normalize=normalize)
+    assert lempel_ziv_complexity(signal, normalize=normalize) == pytest.approx(
+        expected, abs=2e-15
+    )
 
 
 @pytest.mark.parametrize("name", ["periodic", "white_noise", "chirp"])

@@ -16,6 +16,13 @@ before/after values, and a regression test.
   AntroPy comparisons. Petrosian zero-derivative plateaus deliberately remove
   zero slopes before transition counting; this documented ABFE policy differs
   from AntroPy's direct `signbit` transition count.
+- Implemented median-binarized Lempel–Ziv 1976 exhaustive-history complexity
+  with raw and normalized outputs, deterministic median ties, constant-signal
+  degeneracy, published hand-parsed examples, and pinned AntroPy comparisons.
+- Added immutable per-output feature-parameter provenance. Name-only
+  Lempel–Ziv extraction records its canonical `normalize=True` default, while
+  explicit band requests record their resolved bands, relative-power mode, and
+  output units.
 - Specified all eight time-domain fractal/complexity features mapped from DIHC
   Feature Manager plus a new Rosenstein largest Lyapunov exponent estimator
   before beginning their staged implementation.

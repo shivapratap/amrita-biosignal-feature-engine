@@ -134,6 +134,12 @@ _FEATURE_SPECS = (
         "Entropy of delayed-embedding singular values.",
     ),
     _spec(
+        "lempel_ziv_complexity",
+        FeatureDomain.COMPLEXITY,
+        FeatureInput.SIGNAL,
+        "Median-binarized LZ76 exhaustive-history complexity.",
+    ),
+    _spec(
         "hjorth_mobility",
         FeatureDomain.COMPLEXITY,
         FeatureInput.SIGNAL,

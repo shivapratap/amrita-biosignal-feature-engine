@@ -62,6 +62,7 @@ shared PSD. Entropy defaults and validation tolerances are described in
 
 `amrita_biosignal_feature_engine.complexity` exports:
 
+- `lempel_ziv_complexity`
 - `hjorth_mobility`
 - `hjorth_complexity`
 - `petrosian_fractal_dimension`
@@ -77,6 +78,10 @@ policy are recorded in `complexity-validation.md`.
 metadata and ordered selection helpers. The structured sample-entropy profile
 is excluded because it is not scalar. Caller-defined band outputs are requests,
 not global registry mutations.
+
+`ExtractionProvenance.feature_parameters` is an immutable per-output mapping.
+It records canonical defaults for registered parameterized features and the
+resolved settings of explicit band requests.
 
 `amrita_biosignal_feature_engine.diagnostics` defines diagnostic codes,
 severities, immutable diagnostic records, and frequency-resolution warnings.

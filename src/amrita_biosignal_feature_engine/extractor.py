@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Callable, Iterable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import cache
 from importlib.metadata import PackageNotFoundError, version
 from numbers import Real
@@ -19,6 +19,7 @@ from .complexity import (
     hjorth_complexity,
     hjorth_mobility,
     katz_fractal_dimension,
+    lempel_ziv_complexity,
     petrosian_fractal_dimension,
 )
 from .diagnostics import (
@@ -150,6 +151,9 @@ class ExtractionProvenance:
     psd_bin_spacing: float | None = None
     psd_effective_bandwidth: float | None = None
     psd_segment_count: int | None = None
+    feature_parameters: Mapping[str, Mapping[str, object]] = field(
+        default_factory=dict
+    )
 
     def __post_init__(self) -> None:
         if not self.package_version:
@@ -170,6 +174,40 @@ class ExtractionProvenance:
         if len(set(requested)) != len(requested):
             raise ValueError("requested_features must be unique")
         object.__setattr__(self, "requested_features", requested)
+        copied_parameters: dict[str, Mapping[str, object]] = {}
+        for output_name, parameters in self.feature_parameters.items():
+            if output_name not in requested:
+                raise ValueError(
+                    "feature_parameters keys must identify requested features"
+                )
+            if not isinstance(parameters, Mapping):
+                raise TypeError("feature parameter records must be mappings")
+            copied: dict[str, object] = {}
+            for name, value in parameters.items():
+                if not isinstance(name, str) or not name:
+                    raise ValueError("feature parameter names must be nonempty strings")
+                if isinstance(value, tuple):
+                    if any(
+                        not (
+                            isinstance(item, str | bool | int | float)
+                            or item is None
+                        )
+                        for item in value
+                    ):
+                        raise TypeError(
+                            "feature parameter tuples must contain scalar values"
+                        )
+                    copied[name] = tuple(value)
+                elif isinstance(value, str | bool | int | float) or value is None:
+                    copied[name] = value
+                else:
+                    raise TypeError(
+                        "feature parameter values must be scalar values or tuples"
+                    )
+            copied_parameters[output_name] = MappingProxyType(copied)
+        object.__setattr__(
+            self, "feature_parameters", MappingProxyType(copied_parameters)
+        )
 
         metadata = (
             self.psd_bin_spacing,
@@ -292,6 +330,7 @@ _SIGNAL_DISPATCH: Mapping[str, ScalarSignalFunction] = MappingProxyType(
         "fuzzy_entropy": fuzzy_entropy,
         "distribution_entropy": distribution_entropy,
         "svd_entropy": svd_entropy,
+        "lempel_ziv_complexity": lempel_ziv_complexity,
         "hjorth_mobility": hjorth_mobility,
         "hjorth_complexity": hjorth_complexity,
         "petrosian_fractal_dimension": petrosian_fractal_dimension,
@@ -347,6 +386,32 @@ def _resolve_features(features: Iterable[FeatureRequest]) -> tuple[_ResolvedFeat
     if len(set(output_names)) != len(output_names):
         raise ValueError("requested output names must be unique")
     return tuple(resolved)
+
+
+def _feature_parameters(
+    resolved: tuple[_ResolvedFeature, ...],
+) -> Mapping[str, Mapping[str, object]]:
+    parameters: dict[str, Mapping[str, object]] = {}
+    for item in resolved:
+        if item.registered_name == "lempel_ziv_complexity":
+            parameters[item.output_name] = {"normalize": True}
+        elif isinstance(item.request, BandPowerRequest):
+            parameters[item.output_name] = {
+                "band": item.request.band,
+                "relative": item.request.relative,
+                "output_units": (
+                    "dimensionless"
+                    if item.request.relative
+                    else "signal_units_squared"
+                ),
+            }
+        elif isinstance(item.request, BandPowerRatioRequest):
+            parameters[item.output_name] = {
+                "numerator_band": item.request.numerator_band,
+                "denominator_band": item.request.denominator_band,
+                "output_units": "dimensionless",
+            }
+    return parameters
 
 
 def _resolution_diagnostics(
@@ -515,6 +580,7 @@ class FeatureExtractor:
             psd_bin_spacing=psd.bin_spacing if psd is not None else None,
             psd_effective_bandwidth=psd.effective_bandwidth if psd is not None else None,
             psd_segment_count=psd.segment_count if psd is not None else None,
+            feature_parameters=_feature_parameters(resolved),
         )
         return ExtractionResult(values, tuple(diagnostics), provenance)
 
@@ -546,6 +612,7 @@ class FeatureExtractor:
             signal_length,
             self.config.sampling_frequency,
             names,
+            feature_parameters=_feature_parameters(resolved),
         )
         return ExtractionResult(values, diagnostics, provenance)
 

@@ -10,6 +10,7 @@ from amrita_biosignal_feature_engine.complexity import (
     hjorth_complexity,
     hjorth_mobility,
     katz_fractal_dimension,
+    lempel_ziv_complexity,
     petrosian_fractal_dimension,
 )
 
@@ -27,6 +28,35 @@ def _manual_katz(signal: np.ndarray) -> float:
     mean_step = np.mean(steps)
     displacement = np.max(np.abs(signal - signal[0]))
     return float(np.log10(path_length / mean_step) / np.log10(displacement / mean_step))
+
+
+def test_lempel_ziv_matches_published_hand_parsed_sequence() -> None:
+    # LZ76 phrases: 1 / 0 / 01 / 1110 / 1100 / 0010
+    binary = np.array([int(symbol) for symbol in "1001111011000010"])
+    signal = np.where(binary == 1, 1.0, -1.0)
+    assert np.median(signal) == 0.0
+    assert lempel_ziv_complexity(signal, normalize=False) == 6.0
+    assert lempel_ziv_complexity(signal) == pytest.approx(1.5)
+
+
+def test_lempel_ziv_median_ties_map_to_one() -> None:
+    signal = np.array([-2.0, 0.0, 0.0, 3.0])
+    binary = signal >= np.median(signal)
+    np.testing.assert_array_equal(binary, [False, True, True, True])
+    assert lempel_ziv_complexity(signal, normalize=False) == 3.0
+
+
+def test_lempel_ziv_validation_degeneracy_and_invariance() -> None:
+    with pytest.raises(TypeError, match="normalize"):
+        lempel_ziv_complexity([0.0, 1.0], normalize=1)  # type: ignore[arg-type]
+    with pytest.raises(TypeError, match="normalize"):
+        lempel_ziv_complexity([0.0, 1.0], normalize=np.bool_(True))  # type: ignore[arg-type]
+    assert np.isnan(lempel_ziv_complexity(np.ones(8)))
+
+    signal = np.array([-4.0, -1.0, 0.5, 3.0, -2.0, 2.0])
+    expected = lempel_ziv_complexity(signal)
+    assert lempel_ziv_complexity(4.0 * signal + 11.0) == expected
+    assert lempel_ziv_complexity(-signal) == expected
 
 
 def test_hjorth_features_match_independent_population_variance_oracle() -> None:
@@ -89,6 +119,7 @@ def test_katz_matches_independent_geometry_oracle() -> None:
 @pytest.mark.parametrize(
     "function,minimum_length",
     [
+        (lempel_ziv_complexity, 2),
         (hjorth_mobility, 2),
         (hjorth_complexity, 3),
         (petrosian_fractal_dimension, 3),
@@ -124,6 +155,7 @@ def test_complexity_features_preserve_strict_signal_validation(
         hjorth_complexity,
         petrosian_fractal_dimension,
         katz_fractal_dimension,
+        lempel_ziv_complexity,
     ):
         with pytest.raises((TypeError, ValueError)):
             function(bad_signal)  # type: ignore[arg-type]

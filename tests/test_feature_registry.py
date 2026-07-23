@@ -35,6 +35,7 @@ EXPECTED_FEATURE_NAMES = (
     "fuzzy_entropy",
     "distribution_entropy",
     "svd_entropy",
+    "lempel_ziv_complexity",
     "hjorth_mobility",
     "hjorth_complexity",
     "petrosian_fractal_dimension",
@@ -83,6 +84,7 @@ def test_select_features_returns_new_ordered_tuple_without_mutation() -> None:
     assert select_features() is not select_features()
     complexity = select_features(domains=[FeatureDomain.COMPLEXITY])
     assert tuple(spec.name for spec in complexity) == (
+        "lempel_ziv_complexity",
         "hjorth_mobility",
         "hjorth_complexity",
         "petrosian_fractal_dimension",

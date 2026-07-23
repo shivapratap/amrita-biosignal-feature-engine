@@ -95,6 +95,44 @@ def test_provenance_with_psd_records_complete_shared_metadata() -> None:
     assert result.psd_segment_count == 9
 
 
+def test_provenance_defensively_freezes_feature_parameters() -> None:
+    source: dict[str, dict[str, object]] = {
+        "lempel_ziv_complexity": {"normalize": True}
+    }
+    result = ExtractionProvenance(
+        "0.2.0.dev0",
+        100,
+        100.0,
+        ("lempel_ziv_complexity",),
+        feature_parameters=source,
+    )
+    source["lempel_ziv_complexity"]["normalize"] = False
+    assert result.feature_parameters["lempel_ziv_complexity"]["normalize"] is True
+    with pytest.raises(TypeError):
+        result.feature_parameters["lempel_ziv_complexity"]["normalize"] = False  # type: ignore[index]
+    with pytest.raises(TypeError):
+        result.feature_parameters["new"] = {}  # type: ignore[index]
+
+
+def test_provenance_rejects_unrequested_or_mutable_parameters() -> None:
+    with pytest.raises(ValueError, match="requested features"):
+        ExtractionProvenance(
+            "0.2.0.dev0",
+            100,
+            100.0,
+            ("mean",),
+            feature_parameters={"other": {"value": 1}},
+        )
+    with pytest.raises(TypeError, match="scalar values or tuples"):
+        ExtractionProvenance(
+            "0.2.0.dev0",
+            100,
+            100.0,
+            ("mean",),
+            feature_parameters={"mean": {"value": [1, 2]}},
+        )
+
+
 def test_extraction_result_copies_and_freezes_values() -> None:
     source = {"mean": 2.0}
     result = ExtractionResult(source, (), provenance("mean"))

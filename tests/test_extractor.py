@@ -88,6 +88,7 @@ def test_signal_only_request_does_not_compute_psd(monkeypatch: pytest.MonkeyPatc
 def test_extract_complexity_features_through_registry_dispatch() -> None:
     signal, extractor = signal_and_extractor()
     names = (
+        "lempel_ziv_complexity",
         "hjorth_mobility",
         "hjorth_complexity",
         "petrosian_fractal_dimension",
@@ -98,6 +99,9 @@ def test_extract_complexity_features_through_registry_dispatch() -> None:
     assert all(np.isfinite(value) for value in result.values.values())
     assert result.failed_features == ()
     assert result.provenance.psd_config is None
+    assert result.provenance.feature_parameters == {
+        "lempel_ziv_complexity": {"normalize": True}
+    }
 
 
 def test_package_version_metadata_is_resolved_once_per_process(
@@ -143,6 +147,23 @@ def test_explicit_band_power_and_ratio_requests() -> None:
     assert result.values["relative_8_12"] == pytest.approx(0.8, abs=1e-12)
     assert result.values["low_over_high"] == pytest.approx(4.0, rel=1e-12)
     assert result.failed_features == ()
+    assert result.provenance.feature_parameters == {
+        "power_8_12": {
+            "band": (8.0, 12.0),
+            "relative": False,
+            "output_units": "signal_units_squared",
+        },
+        "relative_8_12": {
+            "band": (8.0, 12.0),
+            "relative": True,
+            "output_units": "dimensionless",
+        },
+        "low_over_high": {
+            "numerator_band": (8.0, 12.0),
+            "denominator_band": (20.0, 30.0),
+            "output_units": "dimensionless",
+        },
+    }
 
 
 def test_underresolved_band_retains_value_warning_and_diagnostic() -> None:

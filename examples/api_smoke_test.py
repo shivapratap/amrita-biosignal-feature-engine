@@ -17,7 +17,10 @@ from amrita_biosignal_feature_engine import (
 )
 from amrita_biosignal_feature_engine import frequency_domain as frequency
 from amrita_biosignal_feature_engine import time_domain as time_features
-from amrita_biosignal_feature_engine.complexity import hjorth_mobility
+from amrita_biosignal_feature_engine.complexity import (
+    hjorth_mobility,
+    lempel_ziv_complexity,
+)
 from amrita_biosignal_feature_engine.entropy import (
     approximate_entropy,
     permutation_entropy,
@@ -44,6 +47,7 @@ def main() -> None:
     approximate = approximate_entropy(signal)
     permutation = permutation_entropy(signal, normalize=True)
     mobility = hjorth_mobility(signal)
+    lz_complexity = lempel_ziv_complexity(signal)
     profile = sample_entropy_profile(signal)
 
     extractor = FeatureExtractor(ExtractorConfig(sampling_frequency, psd_config))
@@ -58,11 +62,19 @@ def main() -> None:
     result = extractor.extract(signal, features=requests)
     batch = extractor.extract_batch((signal, signal * 0.5), features=requests)
 
-    direct_values = (rms, peak_hz, power_8_12_hz, approximate, permutation, mobility)
+    direct_values = (
+        rms,
+        peak_hz,
+        power_8_12_hz,
+        approximate,
+        permutation,
+        mobility,
+        lz_complexity,
+    )
     assert all(math.isfinite(value) for value in direct_values)
     assert abs(peak_hz - 10.0) <= psd.bin_spacing
     assert profile.point_count > 0
-    assert len(DEFAULT_FEATURE_NAMES) == 30
+    assert len(DEFAULT_FEATURE_NAMES) == 31
     assert not result.failed_features
     assert len(batch.rows) == 2
     assert all(not row.failed_features for row in batch.rows)

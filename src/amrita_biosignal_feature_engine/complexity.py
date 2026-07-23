@@ -3,9 +3,60 @@
 from __future__ import annotations
 
 import numpy as np
-from numpy.typing import ArrayLike
+from numpy.typing import ArrayLike, NDArray
 
 from .validation import validate_signal
+
+
+def _lz76_phrase_count(sequence: NDArray[np.uint8]) -> int:
+    """Return the LZ76 exhaustive-history phrase count for a binary array."""
+    complexity = 1
+    prefix_length = 1
+    substring_length = 1
+    maximum_substring_length = 1
+    pointer = 0
+
+    while prefix_length + substring_length <= sequence.size:
+        if (
+            sequence[pointer + substring_length - 1]
+            == sequence[prefix_length + substring_length - 1]
+        ):
+            substring_length += 1
+        else:
+            maximum_substring_length = max(
+                substring_length, maximum_substring_length
+            )
+            pointer += 1
+            if pointer == prefix_length:
+                complexity += 1
+                prefix_length += maximum_substring_length
+                pointer = 0
+                maximum_substring_length = 1
+            substring_length = 1
+
+    if substring_length != 1:
+        complexity += 1
+    return complexity
+
+
+def lempel_ziv_complexity(signal: ArrayLike, *, normalize: bool = True) -> float:
+    """Return LZ76 complexity after a deterministic median binary split.
+
+    Samples greater than or equal to the signal median map to one; all others
+    map to zero. The raw exhaustive-history phrase count is returned when
+    ``normalize`` is false. Otherwise the count is multiplied by
+    ``log2(n) / n``. Constant signals return ``NaN``.
+    """
+    if not isinstance(normalize, bool):
+        raise TypeError("normalize must be a boolean")
+    data = validate_signal(signal, minimum_length=2)
+    if float(np.ptp(data)) == 0.0:
+        return float("nan")
+    binary = np.asarray(data >= np.median(data), dtype=np.uint8)
+    phrase_count = _lz76_phrase_count(binary)
+    if not normalize:
+        return float(phrase_count)
+    return float(phrase_count * np.log2(data.size) / data.size)
 
 
 def hjorth_mobility(signal: ArrayLike) -> float:
@@ -91,5 +142,6 @@ __all__ = [
     "hjorth_complexity",
     "hjorth_mobility",
     "katz_fractal_dimension",
+    "lempel_ziv_complexity",
     "petrosian_fractal_dimension",
 ]

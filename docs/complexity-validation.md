@@ -2,10 +2,10 @@
 
 This document freezes the v0.2.0 definitions for eight fractal/complexity
 features mapped from DIHC Feature Manager and one new
-largest-Lyapunov-exponent feature. Hjorth mobility, Hjorth complexity,
-Petrosian fractal dimension, and Katz fractal dimension are implemented in the
-first correctness batch. The remaining five definitions are design
-specifications and are not yet implementation claims.
+largest-Lyapunov-exponent feature. Lempel–Ziv complexity, Hjorth mobility,
+Hjorth complexity, Petrosian fractal dimension, and Katz fractal dimension are
+implemented. The remaining four definitions are design specifications and are
+not yet implementation claims.
 
 The nine planned public function names are:
 
@@ -64,7 +64,7 @@ The sequence is parsed left to right with the Lempel-Ziv 1976 exhaustive
 history production rule. Let `c(n)` be the resulting phrase count for a binary
 sequence of length `n`.
 
-The public function will expose:
+The public function exposes:
 
 ```text
 lempel_ziv_complexity(signal, *, normalize=True)
@@ -534,8 +534,8 @@ delay_samples=..., minimum_separation_samples=..., fit_start=...,
 fit_end=...)`, analogous to caller-defined band-power requests. Sampling
 frequency comes from `ExtractorConfig`.
 
-`ExtractionProvenance` will gain an immutable per-output
-`feature_parameters` mapping. Bare registered parameterized features record
+`ExtractionProvenance` has an immutable per-output `feature_parameters`
+mapping. Bare registered parameterized features record
 their resolved canonical defaults; request-driven features record every
 caller-supplied parameter plus output units. Parameter-free features need no
 entry. Nested mappings and contained tuples must be defensively copied and

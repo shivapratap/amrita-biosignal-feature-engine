@@ -11,6 +11,7 @@ from amrita_biosignal_feature_engine.complexity import (
     hjorth_complexity,
     hjorth_mobility,
     katz_fractal_dimension,
+    lempel_ziv_complexity,
     petrosian_fractal_dimension,
 )
 from amrita_biosignal_feature_engine.entropy import (
@@ -71,6 +72,7 @@ def main() -> None:
         hjorth_complexity(short_signal),
         petrosian_fractal_dimension(short_signal),
         katz_fractal_dimension(short_signal),
+        lempel_ziv_complexity(short_signal),
     )
     if not all(np.isfinite(value) for value in complexity_values):
         raise AssertionError("complexity smoke calculation failed")
