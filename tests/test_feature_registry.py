@@ -38,6 +38,7 @@ EXPECTED_FEATURE_NAMES = (
     "lempel_ziv_complexity",
     "hjorth_mobility",
     "hjorth_complexity",
+    "fisher_information",
     "petrosian_fractal_dimension",
     "katz_fractal_dimension",
     "peak_frequency",
@@ -87,6 +88,7 @@ def test_select_features_returns_new_ordered_tuple_without_mutation() -> None:
         "lempel_ziv_complexity",
         "hjorth_mobility",
         "hjorth_complexity",
+        "fisher_information",
         "petrosian_fractal_dimension",
         "katz_fractal_dimension",
     )

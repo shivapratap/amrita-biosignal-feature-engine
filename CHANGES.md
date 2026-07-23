@@ -23,6 +23,15 @@ before/after values, and a regression test.
   Lempel–Ziv extraction records its canonical `normalize=True` default, while
   explicit band requests record their resolved bands, relative-power mode, and
   output units.
+- Strengthened Lempel–Ziv validation with a structurally independent
+  exhaustive-history parser, all 8,188 binary sequences of lengths 2 through
+  12, and exact raw-count comparisons against DIHC Feature Manager commit
+  `852a79d0178eb762aeaf81960820043365a059c3`.
+- Implemented mean-centered SVD-spectrum Fisher information with configurable
+  embedding order and delay, numerical rank-zero/rank-one `NaN` handling,
+  immutable default-parameter provenance, a hand-derived two-value spectrum,
+  an independent Gram-eigenvalue oracle, and exact ordinary-case comparisons
+  against the pinned corrected DIHC implementation.
 - Specified all eight time-domain fractal/complexity features mapped from DIHC
   Feature Manager plus a new Rosenstein largest Lyapunov exponent estimator
   before beginning their staged implementation.

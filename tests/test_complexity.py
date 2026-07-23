@@ -7,6 +7,7 @@ import pytest
 from numpy.typing import ArrayLike
 
 from amrita_biosignal_feature_engine.complexity import (
+    fisher_information,
     hjorth_complexity,
     hjorth_mobility,
     katz_fractal_dimension,
@@ -66,6 +67,72 @@ def test_hjorth_features_match_independent_population_variance_oracle() -> None:
     assert hjorth_complexity(signal) == pytest.approx(expected_complexity)
 
 
+def _eigenvalue_fisher_oracle(
+    signal: np.ndarray, *, order: int, delay: int
+) -> float:
+    centered = signal - np.mean(signal)
+    rows = centered.size - (order - 1) * delay
+    embedded = np.column_stack(
+        [
+            centered[offset * delay : offset * delay + rows]
+            for offset in range(order)
+        ]
+    )
+    eigenvalues = np.linalg.eigvalsh(embedded.T @ embedded)
+    singular_values = np.sqrt(np.maximum(eigenvalues[::-1], 0.0))
+    probabilities = singular_values / np.sum(singular_values)
+    return float(
+        sum(
+            (probabilities[index + 1] - probabilities[index]) ** 2
+            / probabilities[index]
+            for index in range(order - 1)
+            if probabilities[index] > 0.0
+        )
+    )
+
+
+def test_fisher_information_matches_hand_calculated_two_value_spectrum() -> None:
+    signal = np.array([1.0, -1.0, -1.0, 1.0])
+    first = 2.0 / (2.0 + np.sqrt(2.0))
+    second = np.sqrt(2.0) / (2.0 + np.sqrt(2.0))
+    expected = (second - first) ** 2 / first
+    assert fisher_information(signal) == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("order,delay", [(2, 1), (3, 1), (3, 2), (4, 2)])
+def test_fisher_matches_independent_gram_eigenvalue_oracle(
+    order: int, delay: int
+) -> None:
+    signal = np.random.default_rng(order * 100 + delay).normal(size=80)
+    assert fisher_information(signal, order=order, delay=delay) == pytest.approx(
+        _eigenvalue_fisher_oracle(signal, order=order, delay=delay),
+        abs=2e-15,
+    )
+
+
+@pytest.mark.parametrize("scale,offset", [(0.5, 0.0), (3.0, 10.0), (-2.0, -4.0)])
+def test_fisher_is_affine_invariant(scale: float, offset: float) -> None:
+    signal = np.random.default_rng(2468).normal(size=80)
+    assert fisher_information(scale * signal + offset, order=3, delay=2) == pytest.approx(
+        fisher_information(signal, order=3, delay=2), abs=2e-15
+    )
+
+
+def test_fisher_validation_and_rank_degeneracy() -> None:
+    for name, arguments in (
+        ("order", {"order": 1}),
+        ("delay", {"delay": 0}),
+    ):
+        with pytest.raises(ValueError, match=name):
+            fisher_information(np.arange(10.0), **arguments)
+    with pytest.raises(TypeError, match="integer"):
+        fisher_information(np.arange(10.0), order=True)
+    with pytest.raises(TypeError, match="integer"):
+        fisher_information(np.arange(10.0), delay=1.5)  # type: ignore[arg-type]
+    assert np.isnan(fisher_information(np.ones(8)))
+    assert np.isnan(fisher_information(np.tile([-1.0, 1.0], 8)))
+
+
 @pytest.mark.parametrize("scale", [0.5, 3.0, -2.0])
 def test_hjorth_features_are_affine_invariant(scale: float) -> None:
     signal = np.sin(np.linspace(0.0, 4.0 * np.pi, 80, endpoint=False))
@@ -122,6 +189,7 @@ def test_katz_matches_independent_geometry_oracle() -> None:
         (lempel_ziv_complexity, 2),
         (hjorth_mobility, 2),
         (hjorth_complexity, 3),
+        (fisher_information, 3),
         (petrosian_fractal_dimension, 3),
         (katz_fractal_dimension, 2),
     ],
@@ -153,6 +221,7 @@ def test_complexity_features_preserve_strict_signal_validation(
     for function in (
         hjorth_mobility,
         hjorth_complexity,
+        fisher_information,
         petrosian_fractal_dimension,
         katz_fractal_dimension,
         lempel_ziv_complexity,

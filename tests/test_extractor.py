@@ -91,6 +91,7 @@ def test_extract_complexity_features_through_registry_dispatch() -> None:
         "lempel_ziv_complexity",
         "hjorth_mobility",
         "hjorth_complexity",
+        "fisher_information",
         "petrosian_fractal_dimension",
         "katz_fractal_dimension",
     )
@@ -100,7 +101,8 @@ def test_extract_complexity_features_through_registry_dispatch() -> None:
     assert result.failed_features == ()
     assert result.provenance.psd_config is None
     assert result.provenance.feature_parameters == {
-        "lempel_ziv_complexity": {"normalize": True}
+        "lempel_ziv_complexity": {"normalize": True},
+        "fisher_information": {"order": 2, "delay": 1},
     }
 
 

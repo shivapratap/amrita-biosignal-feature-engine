@@ -65,6 +65,7 @@ shared PSD. Entropy defaults and validation tolerances are described in
 - `lempel_ziv_complexity`
 - `hjorth_mobility`
 - `hjorth_complexity`
+- `fisher_information`
 - `petrosian_fractal_dimension`
 - `katz_fractal_dimension`
 

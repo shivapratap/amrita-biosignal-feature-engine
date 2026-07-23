@@ -8,6 +8,15 @@ from numpy.typing import ArrayLike, NDArray
 from .validation import validate_signal
 
 
+def _validate_integer(value: int, *, name: str, minimum: int) -> int:
+    if isinstance(value, bool | np.bool_) or not isinstance(value, int | np.integer):
+        raise TypeError(f"{name} must be an integer")
+    result = int(value)
+    if result < minimum:
+        raise ValueError(f"{name} must be at least {minimum}")
+    return result
+
+
 def _lz76_phrase_count(sequence: NDArray[np.uint8]) -> int:
     """Return the LZ76 exhaustive-history phrase count for a binary array."""
     complexity = 1
@@ -92,6 +101,45 @@ def hjorth_complexity(signal: ArrayLike) -> float:
     return float(derivative_mobility / mobility)
 
 
+def fisher_information(
+    signal: ArrayLike, *, order: int = 2, delay: int = 1
+) -> float:
+    """Return dimensionless SVD-spectrum Fisher information.
+
+    The signal is mean-centered and delay embedded. If ``p`` is the descending
+    normalized singular-value spectrum, the result is
+    ``sum((p[i + 1] - p[i])**2 / p[i])`` over positive denominators.
+    Numerically rank-zero and rank-one embeddings return ``NaN``.
+    """
+    order = _validate_integer(order, name="order", minimum=2)
+    delay = _validate_integer(delay, name="delay", minimum=1)
+    minimum_length = (order - 1) * delay + 2
+    data = validate_signal(signal, minimum_length=minimum_length)
+    centered = data - np.mean(data)
+    row_count = centered.size - (order - 1) * delay
+    embedded = np.column_stack(
+        [
+            centered[offset * delay : offset * delay + row_count]
+            for offset in range(order)
+        ]
+    )
+    singular_values = np.linalg.svd(embedded, compute_uv=False)
+    if singular_values.size == 0 or singular_values[0] == 0.0:
+        return float("nan")
+    tolerance = (
+        np.finfo(np.float64).eps
+        * max(embedded.shape)
+        * float(singular_values[0])
+    )
+    if int(np.count_nonzero(singular_values > tolerance)) <= 1:
+        return float("nan")
+    probabilities = singular_values / np.sum(singular_values)
+    denominators = probabilities[:-1]
+    differences = np.diff(probabilities)
+    positive = denominators > 0.0
+    return float(np.sum((differences[positive] ** 2) / denominators[positive]))
+
+
 def petrosian_fractal_dimension(signal: ArrayLike) -> float:
     """Return Petrosian fractal dimension.
 
@@ -139,6 +187,7 @@ def katz_fractal_dimension(signal: ArrayLike) -> float:
 
 
 __all__ = [
+    "fisher_information",
     "hjorth_complexity",
     "hjorth_mobility",
     "katz_fractal_dimension",

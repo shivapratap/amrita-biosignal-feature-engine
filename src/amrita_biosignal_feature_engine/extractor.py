@@ -16,6 +16,7 @@ from numpy.typing import ArrayLike
 
 from . import time_domain
 from .complexity import (
+    fisher_information,
     hjorth_complexity,
     hjorth_mobility,
     katz_fractal_dimension,
@@ -333,6 +334,7 @@ _SIGNAL_DISPATCH: Mapping[str, ScalarSignalFunction] = MappingProxyType(
         "lempel_ziv_complexity": lempel_ziv_complexity,
         "hjorth_mobility": hjorth_mobility,
         "hjorth_complexity": hjorth_complexity,
+        "fisher_information": fisher_information,
         "petrosian_fractal_dimension": petrosian_fractal_dimension,
         "katz_fractal_dimension": katz_fractal_dimension,
     }
@@ -395,6 +397,8 @@ def _feature_parameters(
     for item in resolved:
         if item.registered_name == "lempel_ziv_complexity":
             parameters[item.output_name] = {"normalize": True}
+        elif item.registered_name == "fisher_information":
+            parameters[item.output_name] = {"order": 2, "delay": 1}
         elif isinstance(item.request, BandPowerRequest):
             parameters[item.output_name] = {
                 "band": item.request.band,

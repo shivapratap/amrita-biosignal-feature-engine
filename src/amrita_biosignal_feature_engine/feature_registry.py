@@ -152,6 +152,12 @@ _FEATURE_SPECS = (
         "Dimensionless Hjorth complexity.",
     ),
     _spec(
+        "fisher_information",
+        FeatureDomain.COMPLEXITY,
+        FeatureInput.SIGNAL,
+        "SVD-spectrum Fisher information.",
+    ),
+    _spec(
         "petrosian_fractal_dimension",
         FeatureDomain.COMPLEXITY,
         FeatureInput.SIGNAL,

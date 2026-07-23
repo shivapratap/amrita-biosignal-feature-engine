@@ -3,9 +3,9 @@
 This document freezes the v0.2.0 definitions for eight fractal/complexity
 features mapped from DIHC Feature Manager and one new
 largest-Lyapunov-exponent feature. Lempel–Ziv complexity, Hjorth mobility,
-Hjorth complexity, Petrosian fractal dimension, and Katz fractal dimension are
-implemented. The remaining four definitions are design specifications and are
-not yet implementation claims.
+Hjorth complexity, SVD-spectrum Fisher information, Petrosian fractal
+dimension, and Katz fractal dimension are implemented. The remaining three
+definitions are design specifications and are not yet implementation claims.
 
 The nine planned public function names are:
 
@@ -179,7 +179,7 @@ The public name is `fisher_information`, but the documentation must call the
 quantity **SVD-spectrum Fisher information** to distinguish it from other
 Fisher-information definitions.
 
-The function signature will be:
+The function signature is:
 
 ```text
 fisher_information(signal, *, order=2, delay=1)
