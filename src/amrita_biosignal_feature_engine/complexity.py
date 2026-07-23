@@ -20,34 +20,87 @@ def _validate_integer(value: int, *, name: str, minimum: int) -> int:
 
 
 def _lz76_phrase_count(sequence: NDArray[np.uint8]) -> int:
-    """Return the LZ76 exhaustive-history phrase count for a binary array."""
-    complexity = 1
-    prefix_length = 1
-    substring_length = 1
-    maximum_substring_length = 1
-    pointer = 0
+    """Return the LZ76 exhaustive-history phrase count for a binary array.
 
-    while prefix_length + substring_length <= sequence.size:
-        if (
-            sequence[pointer + substring_length - 1]
-            == sequence[prefix_length + substring_length - 1]
-        ):
-            substring_length += 1
-        else:
-            maximum_substring_length = max(
-                substring_length, maximum_substring_length
-            )
-            pointer += 1
-            if pointer == prefix_length:
-                complexity += 1
-                prefix_length += maximum_substring_length
-                pointer = 0
-                maximum_substring_length = 1
-            substring_length = 1
+    A suffix automaton supplies each phrase start's longest previous factor.
+    Recording the earliest end position for every automaton state preserves
+    the exhaustive-history rule, including self-overlapping reproductions.
+    """
+    sequence_length = int(sequence.size)
+    transitions: list[list[int]] = [[-1, -1]]
+    suffix_links = [-1]
+    maximum_lengths = [0]
+    earliest_end_positions = [sequence_length]
+    last_state = 0
 
-    if substring_length != 1:
-        complexity += 1
-    return complexity
+    for position, raw_symbol in enumerate(sequence):
+        symbol = int(raw_symbol)
+        current_state = len(transitions)
+        transitions.append([-1, -1])
+        suffix_links.append(0)
+        maximum_lengths.append(maximum_lengths[last_state] + 1)
+        earliest_end_positions.append(position)
+        candidate_state = last_state
+        while candidate_state >= 0 and transitions[candidate_state][symbol] < 0:
+            transitions[candidate_state][symbol] = current_state
+            candidate_state = suffix_links[candidate_state]
+        if candidate_state >= 0:
+            existing_state = transitions[candidate_state][symbol]
+            if maximum_lengths[candidate_state] + 1 == maximum_lengths[existing_state]:
+                suffix_links[current_state] = existing_state
+            else:
+                clone_state = len(transitions)
+                transitions.append(transitions[existing_state].copy())
+                suffix_links.append(suffix_links[existing_state])
+                maximum_lengths.append(maximum_lengths[candidate_state] + 1)
+                earliest_end_positions.append(sequence_length)
+                while (
+                    candidate_state >= 0
+                    and transitions[candidate_state][symbol] == existing_state
+                ):
+                    transitions[candidate_state][symbol] = clone_state
+                    candidate_state = suffix_links[candidate_state]
+                suffix_links[existing_state] = clone_state
+                suffix_links[current_state] = clone_state
+        last_state = current_state
+
+    length_counts = [0] * (sequence_length + 1)
+    for state_length in maximum_lengths:
+        length_counts[state_length] += 1
+    for state_length in range(1, len(length_counts)):
+        length_counts[state_length] += length_counts[state_length - 1]
+    states_by_ascending_length = [0] * len(transitions)
+    for state in range(len(transitions) - 1, -1, -1):
+        state_length = maximum_lengths[state]
+        length_counts[state_length] -= 1
+        states_by_ascending_length[length_counts[state_length]] = state
+    for state in reversed(states_by_ascending_length[1:]):
+        parent_state = suffix_links[state]
+        earliest_end_positions[parent_state] = min(
+            earliest_end_positions[parent_state],
+            earliest_end_positions[state],
+        )
+
+    phrase_count = 1
+    phrase_start = 1
+    while phrase_start < sequence_length:
+        state = 0
+        reproduced_length = 0
+        while phrase_start + reproduced_length < sequence_length:
+            symbol = int(sequence[phrase_start + reproduced_length])
+            next_state = transitions[state][symbol]
+            candidate_length = reproduced_length + 1
+            if (
+                next_state < 0
+                or earliest_end_positions[next_state] - candidate_length + 1
+                >= phrase_start
+            ):
+                break
+            state = next_state
+            reproduced_length = candidate_length
+        phrase_count += 1
+        phrase_start += reproduced_length + 1
+    return phrase_count
 
 
 def lempel_ziv_complexity(signal: ArrayLike, *, normalize: bool = True) -> float:
@@ -465,8 +518,9 @@ def largest_lyapunov_exponent(
             embedded - embedded[reference_index], axis=1
         )
         distances[~admissible] = np.inf
+        distances[distances == 0.0] = np.inf
         neighbor_index = int(np.argmin(distances))
-        if np.isfinite(distances[neighbor_index]) and distances[neighbor_index] > 0.0:
+        if np.isfinite(distances[neighbor_index]):
             neighbor_pairs.append((reference_index, neighbor_index))
 
     valid_steps: list[float] = []

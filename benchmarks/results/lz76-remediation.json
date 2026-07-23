@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "environment": {
+    "python": "3.13.9",
+    "numpy": "2.3.5",
+    "platform": "macOS-26.5.2-arm64-arm-64bit-Mach-O"
+  },
+  "method": {
+    "seed_rule": "20260723 + signal length",
+    "repeats": 7,
+    "statistic": "median wall time after one warm-up",
+    "compatibility": "exact phrase-count equality required"
+  },
+  "results": [
+    {
+      "size": 512,
+      "phrase_count": 62,
+      "previous_median_seconds": 0.003677833010442555,
+      "suffix_automaton_median_seconds": 0.00039833300979807973,
+      "speedup": 9.233061081999951
+    },
+    {
+      "size": 1024,
+      "phrase_count": 110,
+      "previous_median_seconds": 0.013966792001156136,
+      "suffix_automaton_median_seconds": 0.0008157920092344284,
+      "speedup": 17.12053053113762
+    },
+    {
+      "size": 2048,
+      "phrase_count": 198,
+      "previous_median_seconds": 0.052960499975597486,
+      "suffix_automaton_median_seconds": 0.0018021250143647194,
+      "speedup": 29.38780581449672
+    },
+    {
+      "size": 4096,
+      "phrase_count": 354,
+      "previous_median_seconds": 0.19766358399647288,
+      "suffix_automaton_median_seconds": 0.0036147079954389483,
+      "speedup": 54.683140172286535
+    }
+  ]
+}

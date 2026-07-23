@@ -65,6 +65,11 @@ The sequence is parsed left to right with the Lempel-Ziv 1976 exhaustive
 history production rule. Let `c(n)` be the resulting phrase count for a binary
 sequence of length `n`.
 
+ABFE obtains each phrase start's longest previous factor with a suffix
+automaton whose states retain their earliest end position. This produces the
+same exhaustive-history phrases, including overlapping reproductions, without
+the former repeated Python-level history scan.
+
 The public function exposes:
 
 ```text
@@ -577,6 +582,11 @@ Correctness baselines precede optimization.
 
 - Hjorth, Petrosian, Katz, and Lempel-Ziv should be linear or near-linear in
   signal length.
+- The Lempel-Ziv parser uses a linear-size suffix automaton, linear-time
+  counting order for earliest-occurrence propagation, and one phrase
+  traversal. Reproducible scaling benchmarks at 512, 1,024, 2,048, and 4,096
+  samples guard the implementation expectation; timing remains observational
+  rather than a machine-specific test threshold.
 - Higuchi cost grows with signal length and `k_max`.
 - DFA cost grows with the number and size of scales.
 - Fisher information includes delay embedding and SVD.

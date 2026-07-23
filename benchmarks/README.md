@@ -1,8 +1,8 @@
 # ABFE performance baseline
 
 The benchmark harness measures representative direct-feature, extractor, PSD,
-entropy, mixed, and batch workloads using deterministic synthetic signals. It
-has no dependency beyond ABFE's runtime dependencies.
+entropy, fractal/complexity, mixed, and batch workloads using deterministic
+synthetic signals. It has no dependency beyond ABFE's runtime dependencies.
 
 Run the full baseline from an installed editable checkout:
 
@@ -34,3 +34,10 @@ workloads so their scaling and memory behavior remain visible. The structured
 sample-entropy profile is measured separately because it builds, quantizes,
 sorts, and summarizes two pairwise-distance matrices. Performance changes
 should compare the same case, environment, and dependency versions.
+
+Lempel-Ziv complexity is measured independently at 512, 1,024, 2,048, and
+4,096 samples. These cases expose scaling changes in its exhaustive-history
+parser without imposing machine-specific pass/fail timing limits. The
+same-machine before/after evidence for the suffix-automaton remediation is
+recorded in `results/lz76-remediation.json`; exact phrase-count equality was a
+precondition for every measured case.

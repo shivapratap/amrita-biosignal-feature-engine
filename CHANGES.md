@@ -7,6 +7,19 @@ before/after values, and a regression test.
 
 ### Fractal and complexity design
 
+- Corrected Rosenstein nearest-neighbor selection to exclude exact
+  zero-distance duplicate embeddings before choosing the nearest admissible
+  neighbor. Before the correction, the audited repeated-pattern input selected
+  zero pairs and returned `NaN`; afterward it selects the available nonzero
+  neighbors and returns `0.23969930756318522 s^-1`, matching the independent
+  full-distance-matrix oracle.
+- Replaced the quadratic Python-level LZ76 history scan with an
+  earliest-occurrence suffix-automaton parser. The phrase definition and
+  numerical results are unchanged; exhaustive binary-sequence and pinned
+  AntroPy/DIHC comparisons remain the compatibility gates. Added reproducible
+  512–4,096-sample benchmark cases to expose parser scaling. Same-machine
+  median timings improved from 3.68–197.66 ms to 0.40–3.61 ms across those
+  sizes, a 9.2–54.7× speedup.
 - Opened the v0.2.0 development cycle at version `0.2.0.dev0`.
 - Implemented the first correctness batch: Hjorth mobility, Hjorth complexity,
   Petrosian fractal dimension, and Katz fractal dimension, with strict shared

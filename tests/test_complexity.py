@@ -484,6 +484,23 @@ def test_largest_lyapunov_matches_independent_distance_matrix_oracle() -> None:
     )
 
 
+def test_largest_lyapunov_skips_duplicate_embeddings_before_neighbor_selection() -> None:
+    signal = np.tile(np.array([0.0, 1.0, 3.0, 2.0, -1.0, 0.5]), 8)
+    parameters: _LyapunovParameters = {
+        "sampling_frequency": 1.0,
+        "embedding_dimension": 2,
+        "delay_samples": 1,
+        "minimum_separation_samples": 1,
+        "fit_start": 0,
+        "fit_end": 4,
+    }
+    expected = _literal_lyapunov_oracle(signal, **parameters)
+    assert expected == pytest.approx(0.23969930756318522, abs=2e-15)
+    assert largest_lyapunov_exponent(signal, **parameters) == pytest.approx(
+        expected, abs=2e-14
+    )
+
+
 def test_largest_lyapunov_synthetic_behavior_and_invariances() -> None:
     chaotic = _logistic_signal(1000)
     parameters: _LyapunovParameters = {
