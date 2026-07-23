@@ -7,6 +7,11 @@ before/after values, and a regression test.
 
 ### Fractal and complexity design
 
+- Completed v0.2.0 Release-Readiness Batch C evidence work: added a
+  reproducible LZ76 before/after generator with exact source commits, input
+  digests, timing methodology, installed-package metadata, and peak Python
+  allocation measurements; separated the Lyapunov inverse-seconds
+  sampling-frequency rule into an explicit regression test.
 - Completed v0.2.0 Release-Readiness Batch B: synchronized the stable/development
   installation guidance, 35-entry registry catalogue, all nine complexity
   signatures and degeneracy contracts, request-only Lyapunov example, public
@@ -35,8 +40,10 @@ before/after values, and a regression test.
   numerical results are unchanged; exhaustive binary-sequence and pinned
   AntroPy/DIHC comparisons remain the compatibility gates. Added reproducible
   512–4,096-sample benchmark cases to expose parser scaling. Same-machine
-  median timings improved from 3.68–197.66 ms to 0.40–3.61 ms across those
-  sizes, a 9.2–54.7× speedup.
+  installed-artifact median timings improved from 3.73–190.22 ms to
+  0.42–3.77 ms across those sizes, an 8.8–50.5× speedup. Peak traced Python
+  allocations for the linear-size automaton rose from about 200 KiB at 512
+  samples to 1.81 MiB at 4,096 samples.
 - Opened the v0.2.0 development cycle at version `0.2.0.dev0`.
 - Implemented the first correctness batch: Hjorth mobility, Hjorth complexity,
   Petrosian fractal dimension, and Katz fractal dimension, with strict shared

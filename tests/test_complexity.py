@@ -519,18 +519,31 @@ def test_largest_lyapunov_synthetic_behavior_and_invariances() -> None:
     assert largest_lyapunov_exponent(-2.0 * chaotic, **parameters) == pytest.approx(
         estimate, abs=2e-13
     )
-    faster: _LyapunovParameters = {
-        **parameters,
-        "sampling_frequency": 2.0,
-    }
-    assert largest_lyapunov_exponent(chaotic, **faster) == pytest.approx(
-        2.0 * estimate, abs=2e-13
-    )
     periodic = np.sin(np.linspace(0.0, 80.0 * np.pi, 1000, endpoint=False))
     assert np.isfinite(largest_lyapunov_exponent(periodic, **parameters))
     time = np.arange(1000)
     quasiperiodic = np.sin(0.11 * time) + np.sin(np.sqrt(2.0) * 0.11 * time)
     assert np.isfinite(largest_lyapunov_exponent(quasiperiodic, **parameters))
+
+
+def test_largest_lyapunov_scales_with_sampling_frequency_in_inverse_seconds() -> None:
+    signal = _logistic_signal(1000)
+    parameters: _LyapunovParameters = {
+        "sampling_frequency": 1.0,
+        "embedding_dimension": 3,
+        "delay_samples": 1,
+        "minimum_separation_samples": 20,
+        "fit_start": 0,
+        "fit_end": 6,
+    }
+    estimate_per_second = largest_lyapunov_exponent(signal, **parameters)
+    doubled_sampling_frequency: _LyapunovParameters = {
+        **parameters,
+        "sampling_frequency": 2.0,
+    }
+    assert largest_lyapunov_exponent(
+        signal, **doubled_sampling_frequency
+    ) == pytest.approx(2.0 * estimate_per_second, abs=2e-13)
 
 
 def test_largest_lyapunov_is_positive_for_seeded_lorenz_x_trajectory() -> None:
