@@ -23,13 +23,19 @@ from amrita_biosignal_feature_engine.complexity import (
     fisher_information,
     higuchi_fractal_dimension,
     hjorth_mobility,
+    hjorth_complexity,
+    katz_fractal_dimension,
     largest_lyapunov_exponent,
     lempel_ziv_complexity,
+    petrosian_fractal_dimension,
 )
 from amrita_biosignal_feature_engine.entropy import (
     approximate_entropy,
+    distribution_entropy,
+    fuzzy_entropy,
     permutation_entropy,
     sample_entropy_profile,
+    svd_entropy,
 )
 from amrita_biosignal_feature_engine.feature_registry import DEFAULT_FEATURE_NAMES
 
@@ -48,12 +54,19 @@ def main() -> None:
     psd_config = WelchPSDConfig(window_length=2.0, overlap=1.0)
     psd = compute_psd(signal, sampling_frequency, psd_config)
     peak_hz = frequency.peak_frequency(psd)
+    spectral_entropy = frequency.spectral_entropy(psd)
     power_8_12_hz = frequency.band_power(psd, band=(8.0, 12.0))
     approximate = approximate_entropy(signal)
     permutation = permutation_entropy(signal, normalize=True)
+    fuzzy = fuzzy_entropy(signal)
+    distribution = distribution_entropy(signal)
+    svd = svd_entropy(signal)
     mobility = hjorth_mobility(signal)
+    hjorth = hjorth_complexity(signal)
     lz_complexity = lempel_ziv_complexity(signal)
     fisher = fisher_information(signal)
+    petrosian = petrosian_fractal_dimension(signal)
+    katz = katz_fractal_dimension(signal)
     higuchi = higuchi_fractal_dimension(signal)
     dfa = detrended_fluctuation_analysis(signal)
     lyapunov = largest_lyapunov_exponent(
@@ -83,12 +96,19 @@ def main() -> None:
     direct_values = (
         rms,
         peak_hz,
+        spectral_entropy,
         power_8_12_hz,
         approximate,
         permutation,
+        fuzzy,
+        distribution,
+        svd,
         mobility,
+        hjorth,
         lz_complexity,
         fisher,
+        petrosian,
+        katz,
         higuchi,
         dfa,
         lyapunov,
@@ -105,6 +125,8 @@ def main() -> None:
     print(f"Registered scalar features: {len(DEFAULT_FEATURE_NAMES)}")
     print(f"Direct RMS: {rms:.6f}")
     print(f"Direct peak frequency: {peak_hz:.2f} Hz")
+    print(f"Direct spectral entropy: {spectral_entropy:.6f}")
+    print(f"Direct Hjorth complexity: {hjorth:.6f}")
     print("Extracted values:")
     for name, value in result.values.items():
         print(f"  {name}: {value:.6g}")

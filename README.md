@@ -108,24 +108,30 @@ deterministic chaos.
 ## Implemented features
 
 The immutable scalar registry contains 35 ordered features. The 34 features
-with canonical defaults are included in `DEFAULT_FEATURE_NAMES`:
+with canonical defaults are included in `DEFAULT_FEATURE_NAMES`; the request-
+only largest Lyapunov exponent is registered for explicit use but not enabled
+by default.
 
-- Time domain: minimum, maximum, sum, mean, median, population standard
-  deviation and variance, excess kurtosis, skewness, mean absolute value, RMS,
-  peak-to-peak amplitude, integrated absolute value, waveform length,
-  zero-crossing count, and slope-sign-change count.
-- Entropy: approximate, permutation, fuzzy, distribution, and SVD entropy.
-- Complexity: median-binarized Lempel–Ziv complexity, Hjorth mobility and
-  complexity, SVD-spectrum Fisher information, Petrosian fractal dimension,
-  Katz and Higuchi fractal dimensions, detrended fluctuation analysis, and the
-  request-only Rosenstein largest Lyapunov exponent.
-- Frequency domain: peak, mean, and median frequency; SEF95; and spectral
-  entropy.
+### Feature families
 
-Caller-named band power, relative band power, and directed band-power ratios
-are available through explicit request objects. The structured sample-entropy
-profile remains a direct function rather than being collapsed into an invented
-scalar registry value.
+| Family | Features |
+| --- | --- |
+| Time domain | `minimum`, `maximum`, `sum_value`, `mean`, `median`, `standard_deviation`, `variance`, `kurtosis`, `skewness`, `mean_absolute_value`, `root_mean_square`, `peak_to_peak`, `integrated_absolute_value`, `waveform_length`, `zero_crossing_count`, `slope_sign_change_count` |
+| Frequency domain | `peak_frequency`, `mean_frequency`, `median_frequency`, `spectral_edge_frequency_95`, `spectral_entropy` |
+| Entropy | `approximate_entropy`, `permutation_entropy`, `fuzzy_entropy`, `distribution_entropy`, `svd_entropy` |
+| Complexity and fractal features | `lempel_ziv_complexity`, `hjorth_mobility`, `hjorth_complexity`, `fisher_information`, `petrosian_fractal_dimension`, `katz_fractal_dimension`, `higuchi_fractal_dimension`, `detrended_fluctuation_analysis`, `largest_lyapunov_exponent` |
+
+### Notes on feature scope
+
+- Caller-named band power, relative band power, and directed band-power ratios
+  are available through explicit request objects.
+- The structured sample-entropy profile remains a direct function rather than
+  being collapsed into an invented scalar registry value.
+- `largest_lyapunov_exponent` is request-only; it requires explicit
+  reconstruction and fit parameters from the caller.
+
+If you want the exhaustive, per-function contracts, see the public API
+reference and the family-specific validation docs.
 
 Largest-Lyapunov extraction requires `LargestLyapunovRequest`; ABFE does not
 invent embedding, delay, temporal-exclusion, or fit-region defaults.

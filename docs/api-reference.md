@@ -31,17 +31,18 @@ functions are submodule-only by design.
 ## Time-domain functions
 
 `amrita_biosignal_feature_engine.time_domain` exports canonical functions for
-minimum, maximum, sum, mean, median, population standard deviation and
-variance, excess kurtosis, bias-corrected skewness, mean absolute value, root
-mean square, peak-to-peak amplitude, integrated absolute value, waveform
-length, zero-crossing count, and slope-sign-change count.
+`minimum`, `maximum`, `sum_value`, `mean`, `median`, `standard_deviation`,
+`variance`, `kurtosis`, `skewness`, `mean_absolute_value`,
+`root_mean_square`, `peak_to_peak`, `integrated_absolute_value`,
+`waveform_length`, `zero_crossing_count`, and `slope_sign_change_count`.
 
 ## Frequency-domain functions
 
-`amrita_biosignal_feature_engine.frequency_domain` exports peak frequency,
-mean frequency, median frequency, spectral edge frequency, spectral entropy,
-band power, and band-power ratio. These functions accept `PSDResult`, not raw
-signals. Under-resolved caller-defined bands emit
+`amrita_biosignal_feature_engine.frequency_domain` exports
+`peak_frequency`, `mean_frequency`, `median_frequency`,
+`spectral_edge_frequency`, `spectral_entropy`, `band_power`, and
+`band_power_ratio`. These functions accept `PSDResult`, not raw signals.
+Under-resolved caller-defined bands emit
 `FrequencyResolutionWarning`; the computed value is retained.
 
 ## Entropy functions
@@ -77,6 +78,15 @@ shared PSD. Entropy defaults and validation tolerances are described in
 These functions consume raw validated signals. Their formulas, units,
 minimum-length rules, degeneracy behavior, and intentional Petrosian plateau
 policy are recorded in `complexity-validation.md`.
+
+### Feature families
+
+| Family | Features |
+| --- | --- |
+| Time domain | `minimum`, `maximum`, `sum_value`, `mean`, `median`, `standard_deviation`, `variance`, `kurtosis`, `skewness`, `mean_absolute_value`, `root_mean_square`, `peak_to_peak`, `integrated_absolute_value`, `waveform_length`, `zero_crossing_count`, `slope_sign_change_count` |
+| Frequency domain | `peak_frequency`, `mean_frequency`, `median_frequency`, `spectral_edge_frequency`, `spectral_entropy` |
+| Entropy | `approximate_entropy`, `permutation_entropy`, `fuzzy_entropy`, `distribution_entropy`, `svd_entropy`, `sample_entropy_profile`, `SampleEntropyProfile` |
+| Complexity and fractal features | `lempel_ziv_complexity`, `hjorth_mobility`, `hjorth_complexity`, `fisher_information`, `petrosian_fractal_dimension`, `katz_fractal_dimension`, `higuchi_fractal_dimension`, `detrended_fluctuation_analysis`, `largest_lyapunov_exponent` |
 
 ### Complexity signatures and contracts
 
@@ -138,9 +148,9 @@ LargestLyapunovRequest(
 ```
 
 It is frozen and request-only. `largest_lyapunov_exponent` is registered for
-discovery but excluded from `DEFAULT_FEATURE_NAMES`; the other eight complexity
-features are default scalar outputs. Successful extraction records all resolved
-parameters in immutable per-output provenance.
+discovery but excluded from `DEFAULT_FEATURE_NAMES`; the other eight
+complexity features are default scalar outputs. Successful extraction records
+all resolved parameters in immutable per-output provenance.
 
 `amrita_biosignal_feature_engine.diagnostics` defines diagnostic codes,
 severities, immutable diagnostic records, and frequency-resolution warnings.
