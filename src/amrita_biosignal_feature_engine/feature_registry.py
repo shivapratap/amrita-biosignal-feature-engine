@@ -176,6 +176,12 @@ _FEATURE_SPECS = (
         "Higuchi multiscale curve-length fractal dimension.",
     ),
     _spec(
+        "detrended_fluctuation_analysis",
+        FeatureDomain.COMPLEXITY,
+        FeatureInput.SIGNAL,
+        "Detrended-fluctuation scaling exponent.",
+    ),
+    _spec(
         "peak_frequency", FeatureDomain.FREQUENCY, FeatureInput.PSD, "Frequency of maximum PSD."
     ),
     _spec(

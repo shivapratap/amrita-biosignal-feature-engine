@@ -91,7 +91,7 @@ version.
 
 ## Implemented features
 
-The immutable scalar registry contains 33 ordered features:
+The immutable scalar registry contains 34 ordered features:
 
 - Time domain: minimum, maximum, sum, mean, median, population standard
   deviation and variance, excess kurtosis, skewness, mean absolute value, RMS,
@@ -100,7 +100,7 @@ The immutable scalar registry contains 33 ordered features:
 - Entropy: approximate, permutation, fuzzy, distribution, and SVD entropy.
 - Complexity: median-binarized Lempel–Ziv complexity, Hjorth mobility and
   complexity, SVD-spectrum Fisher information, Petrosian fractal dimension,
-  Katz fractal dimension, and Higuchi fractal dimension.
+  Katz and Higuchi fractal dimensions, and detrended fluctuation analysis.
 - Frequency domain: peak, mean, and median frequency; SEF95; and spectral
   entropy.
 
@@ -121,7 +121,7 @@ explicit.
 | `amrita_biosignal_feature_engine.time_domain` | `minimum`, `maximum`, `sum_value`, `mean`, `median`, `standard_deviation`, `variance`, `kurtosis`, `skewness`, `mean_absolute_value`, `root_mean_square`, `peak_to_peak`, `integrated_absolute_value`, `waveform_length`, `zero_crossing_count`, `slope_sign_change_count` |
 | `amrita_biosignal_feature_engine.frequency_domain` | `peak_frequency`, `mean_frequency`, `median_frequency`, `spectral_edge_frequency`, `spectral_entropy`, `band_power`, `band_power_ratio` |
 | `amrita_biosignal_feature_engine.entropy` | `approximate_entropy`, `permutation_entropy`, `fuzzy_entropy`, `distribution_entropy`, `svd_entropy`, `sample_entropy_profile`, `SampleEntropyProfile` |
-| `amrita_biosignal_feature_engine.complexity` | `lempel_ziv_complexity`, `hjorth_mobility`, `hjorth_complexity`, `fisher_information`, `petrosian_fractal_dimension`, `katz_fractal_dimension`, `higuchi_fractal_dimension` |
+| `amrita_biosignal_feature_engine.complexity` | `lempel_ziv_complexity`, `hjorth_mobility`, `hjorth_complexity`, `fisher_information`, `petrosian_fractal_dimension`, `katz_fractal_dimension`, `higuchi_fractal_dimension`, `detrended_fluctuation_analysis` |
 | `amrita_biosignal_feature_engine.feature_registry` | `FEATURE_REGISTRY`, `DEFAULT_FEATURE_NAMES`, `FeatureSpec`, `FeatureDomain`, `FeatureInput`, `get_feature_spec`, `select_features` |
 | `amrita_biosignal_feature_engine.diagnostics` | `ABFEWarning`, `FrequencyResolutionWarning`, `DiagnosticSeverity`, `DiagnosticCode`, `FeatureDiagnostic` |
 | `amrita_biosignal_feature_engine.validation` | `validate_signal`, `validate_nonnegative_threshold` |

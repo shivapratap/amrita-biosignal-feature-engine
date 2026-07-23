@@ -5,8 +5,9 @@ features mapped from DIHC Feature Manager and one new
 largest-Lyapunov-exponent feature. Lempel–Ziv complexity, Hjorth mobility,
 Hjorth complexity, SVD-spectrum Fisher information, Petrosian fractal
 dimension, Katz fractal dimension, and Higuchi fractal dimension are
-implemented. The remaining two definitions are design specifications and are
-not yet implementation claims.
+implemented, as is detrended fluctuation analysis. The remaining largest
+Lyapunov exponent definition is a design specification and is not yet an
+implementation claim.
 
 The nine planned public function names are:
 
@@ -357,7 +358,7 @@ independent equation-level oracle is the full-precision authority.
 
 ### Definition
 
-The public function will expose:
+The public function exposes:
 
 ```text
 detrended_fluctuation_analysis(
@@ -425,6 +426,11 @@ intercept, not its slope.
   difference is deliberate because a one-point log-log regression is
   indeterminate.
 - An independent explicit segmentation, polynomial-fit, and regression oracle.
+
+At 50–57 samples, AntroPy and DIHC perform a one-point regression and return
+the false numerical value `0.0`. ABFE includes the next floored candidate
+scale, requires at least two fluctuation points, and returns a defined
+two-scale estimate.
 
 ## 9. Largest Lyapunov exponent
 

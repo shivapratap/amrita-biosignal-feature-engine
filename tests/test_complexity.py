@@ -7,6 +7,8 @@ import pytest
 from numpy.typing import ArrayLike
 
 from amrita_biosignal_feature_engine.complexity import (
+    _resolve_dfa_scales,
+    detrended_fluctuation_analysis,
     fisher_information,
     higuchi_fractal_dimension,
     hjorth_complexity,
@@ -242,6 +244,129 @@ def test_higuchi_is_affine_invariant(scale: float, offset: float) -> None:
     )
 
 
+def _literal_dfa_oracle(
+    signal: np.ndarray, *, scales: tuple[int, ...], detrend_order: int
+) -> float:
+    integrated = np.cumsum(signal - np.mean(signal))
+    fluctuations: list[float] = []
+    for scale in scales:
+        residuals: list[float] = []
+        positions = np.arange(scale, dtype=np.float64)
+        design = np.vander(positions, N=detrend_order + 1, increasing=True)
+        segment_count = signal.size // scale
+        for segment_index in range(segment_count):
+            start = segment_index * scale
+            segment = integrated[start : start + scale]
+            coefficients, _, _, _ = np.linalg.lstsq(design, segment, rcond=None)
+            fitted = design @ coefficients
+            residuals.extend(float(value) for value in segment - fitted)
+        fluctuations.append(float(np.sqrt(np.mean(np.square(residuals)))))
+    predictor = np.log(np.asarray(scales, dtype=np.float64))
+    response = np.log(np.asarray(fluctuations))
+    design = np.column_stack((np.ones(predictor.size), predictor))
+    coefficients, _, _, _ = np.linalg.lstsq(design, response, rcond=None)
+    return float(coefficients[1])
+
+
+def test_dfa_automatic_scale_generation_is_frozen() -> None:
+    assert _resolve_dfa_scales(
+        50,
+        scales=None,
+        minimum_scale=4,
+        maximum_scale_fraction=0.1,
+        scale_ratio=1.2,
+        detrend_order=1,
+    ) == (4, 5)
+    assert _resolve_dfa_scales(
+        128,
+        scales=None,
+        minimum_scale=4,
+        maximum_scale_fraction=0.1,
+        scale_ratio=1.2,
+        detrend_order=1,
+    ) == (4, 5, 6, 8, 9, 11)
+
+
+@pytest.mark.parametrize(
+    "scales,detrend_order",
+    [((4, 8, 16), 0), ((4, 8, 16), 1), ((5, 10, 20), 2)],
+)
+def test_dfa_matches_independent_lstsq_oracle(
+    scales: tuple[int, ...], detrend_order: int
+) -> None:
+    signal = np.random.default_rng(8642 + detrend_order).normal(size=120)
+    assert detrended_fluctuation_analysis(
+        signal, scales=scales, detrend_order=detrend_order
+    ) == pytest.approx(
+        _literal_dfa_oracle(
+            signal, scales=scales, detrend_order=detrend_order
+        ),
+        abs=2e-14,
+    )
+
+
+def test_dfa_signal_classes_and_degeneracy() -> None:
+    noise = np.random.default_rng(24601).normal(size=1000)
+    random_walk = np.cumsum(noise)
+    noise_exponent = detrended_fluctuation_analysis(noise)
+    walk_exponent = detrended_fluctuation_analysis(random_walk)
+    assert 0.3 < noise_exponent < 0.8
+    assert 1.2 < walk_exponent < 1.8
+    assert np.isfinite(
+        detrended_fluctuation_analysis(
+            np.sin(np.linspace(0.0, 20.0 * np.pi, 1000))
+        )
+    )
+    assert np.isnan(detrended_fluctuation_analysis(np.ones(100)))
+
+
+@pytest.mark.parametrize("scale,offset", [(0.5, 0.0), (3.0, 10.0), (-2.0, -4.0)])
+def test_dfa_is_affine_invariant(scale: float, offset: float) -> None:
+    signal = np.random.default_rng(13579).normal(size=500)
+    assert detrended_fluctuation_analysis(scale * signal + offset) == pytest.approx(
+        detrended_fluctuation_analysis(signal), abs=2e-14
+    )
+
+
+@pytest.mark.parametrize(
+    "scales",
+    [
+        [4, 8],
+        (4,),
+        (4, 4),
+        (8, 4),
+        (True, 8),
+        (4.0, 8),
+        (2, 4),
+        (4, 51),
+    ],
+)
+def test_dfa_rejects_invalid_explicit_scales(scales: object) -> None:
+    with pytest.raises((TypeError, ValueError)):
+        detrended_fluctuation_analysis(
+            np.arange(100.0), scales=scales  # type: ignore[arg-type]
+        )
+
+
+def test_dfa_rejects_invalid_generator_and_detrending_parameters() -> None:
+    with pytest.raises(ValueError, match="minimum_scale"):
+        detrended_fluctuation_analysis(np.arange(100.0), minimum_scale=2)
+    with pytest.raises(TypeError, match="detrend_order"):
+        detrended_fluctuation_analysis(np.arange(100.0), detrend_order=True)
+    with pytest.raises(ValueError, match="detrend_order"):
+        detrended_fluctuation_analysis(np.arange(100.0), detrend_order=-1)
+    for value in (0.0, 0.6, np.inf):
+        with pytest.raises(ValueError, match="maximum_scale_fraction"):
+            detrended_fluctuation_analysis(
+                np.arange(100.0), maximum_scale_fraction=value
+            )
+    with pytest.raises(ValueError, match="scale_ratio"):
+        detrended_fluctuation_analysis(np.arange(100.0), scale_ratio=1.0)
+    with pytest.raises(ValueError, match="at least 50"):
+        detrended_fluctuation_analysis(np.arange(49.0))
+    assert isinstance(detrended_fluctuation_analysis(np.arange(50.0)), float)
+
+
 @pytest.mark.parametrize(
     "function,minimum_length",
     [
@@ -282,6 +407,7 @@ def test_complexity_features_preserve_strict_signal_validation(
         hjorth_complexity,
         fisher_information,
         higuchi_fractal_dimension,
+        detrended_fluctuation_analysis,
         petrosian_fractal_dimension,
         katz_fractal_dimension,
         lempel_ziv_complexity,

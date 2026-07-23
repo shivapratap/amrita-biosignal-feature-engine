@@ -42,6 +42,7 @@ EXPECTED_FEATURE_NAMES = (
     "petrosian_fractal_dimension",
     "katz_fractal_dimension",
     "higuchi_fractal_dimension",
+    "detrended_fluctuation_analysis",
     "peak_frequency",
     "mean_frequency",
     "median_frequency",
@@ -93,6 +94,7 @@ def test_select_features_returns_new_ordered_tuple_without_mutation() -> None:
         "petrosian_fractal_dimension",
         "katz_fractal_dimension",
         "higuchi_fractal_dimension",
+        "detrended_fluctuation_analysis",
     )
     assert all(not spec.request_required for spec in complexity)
 

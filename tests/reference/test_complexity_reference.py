@@ -13,6 +13,7 @@ import pytest
 from numpy.typing import NDArray
 
 from amrita_biosignal_feature_engine.complexity import (
+    detrended_fluctuation_analysis,
     fisher_information,
     higuchi_fractal_dimension,
     hjorth_complexity,
@@ -143,6 +144,32 @@ def test_constant_higuchi_degeneracy_matches_references() -> None:
     assert np.isnan(higuchi_fractal_dimension(signal))
     assert np.isnan(antropy.higuchi_fd(signal, kmax=10))
     assert np.isnan(dihc_complexity.higuchi_fd_feature(signal))
+
+
+@pytest.mark.parametrize("name", ["periodic", "white_noise", "chirp"])
+def test_default_dfa_matches_antropy_and_pinned_dihc(name: str) -> None:
+    signal = required_signals()[name]
+    actual = detrended_fluctuation_analysis(signal)
+    assert actual == pytest.approx(
+        antropy.detrended_fluctuation(signal), abs=2e-8
+    )
+    assert actual == pytest.approx(
+        dihc_complexity.detrended_fluctuation_feature(signal), abs=2e-8
+    )
+
+
+def test_short_dfa_scale_policy_is_an_intentional_reference_improvement() -> None:
+    signal = np.random.default_rng(456).normal(size=50)
+    assert np.isfinite(detrended_fluctuation_analysis(signal))
+    assert antropy.detrended_fluctuation(signal) == 0.0
+    assert dihc_complexity.detrended_fluctuation_feature(signal) == 0.0
+
+
+def test_constant_dfa_degeneracy_matches_references() -> None:
+    signal = np.ones(100)
+    assert np.isnan(detrended_fluctuation_analysis(signal))
+    assert np.isnan(antropy.detrended_fluctuation(signal))
+    assert np.isnan(dihc_complexity.detrended_fluctuation_feature(signal))
 
 
 @pytest.mark.parametrize("name", ["periodic", "white_noise", "chirp"])

@@ -69,6 +69,7 @@ shared PSD. Entropy defaults and validation tolerances are described in
 - `petrosian_fractal_dimension`
 - `katz_fractal_dimension`
 - `higuchi_fractal_dimension`
+- `detrended_fluctuation_analysis`
 
 These functions consume raw validated signals. Their formulas, units,
 minimum-length rules, degeneracy behavior, and intentional Petrosian plateau

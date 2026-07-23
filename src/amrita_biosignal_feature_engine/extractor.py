@@ -16,6 +16,8 @@ from numpy.typing import ArrayLike
 
 from . import time_domain
 from .complexity import (
+    _resolve_dfa_scales,
+    detrended_fluctuation_analysis,
     fisher_information,
     higuchi_fractal_dimension,
     hjorth_complexity,
@@ -339,6 +341,7 @@ _SIGNAL_DISPATCH: Mapping[str, ScalarSignalFunction] = MappingProxyType(
         "petrosian_fractal_dimension": petrosian_fractal_dimension,
         "katz_fractal_dimension": katz_fractal_dimension,
         "higuchi_fractal_dimension": higuchi_fractal_dimension,
+        "detrended_fluctuation_analysis": detrended_fluctuation_analysis,
     }
 )
 
@@ -394,6 +397,8 @@ def _resolve_features(features: Iterable[FeatureRequest]) -> tuple[_ResolvedFeat
 
 def _feature_parameters(
     resolved: tuple[_ResolvedFeature, ...],
+    *,
+    signal_length: int | None,
 ) -> Mapping[str, Mapping[str, object]]:
     parameters: dict[str, Mapping[str, object]] = {}
     for item in resolved:
@@ -403,6 +408,23 @@ def _feature_parameters(
             parameters[item.output_name] = {"order": 2, "delay": 1}
         elif item.registered_name == "higuchi_fractal_dimension":
             parameters[item.output_name] = {"k_max": 10}
+        elif item.registered_name == "detrended_fluctuation_analysis":
+            dfa_parameters: dict[str, object] = {
+                "minimum_scale": 4,
+                "maximum_scale_fraction": 0.1,
+                "scale_ratio": 1.2,
+                "detrend_order": 1,
+            }
+            if signal_length is not None and signal_length >= 50:
+                dfa_parameters["scales"] = _resolve_dfa_scales(
+                    signal_length,
+                    scales=None,
+                    minimum_scale=4,
+                    maximum_scale_fraction=0.1,
+                    scale_ratio=1.2,
+                    detrend_order=1,
+                )
+            parameters[item.output_name] = dfa_parameters
         elif isinstance(item.request, BandPowerRequest):
             parameters[item.output_name] = {
                 "band": item.request.band,
@@ -588,7 +610,9 @@ class FeatureExtractor:
             psd_bin_spacing=psd.bin_spacing if psd is not None else None,
             psd_effective_bandwidth=psd.effective_bandwidth if psd is not None else None,
             psd_segment_count=psd.segment_count if psd is not None else None,
-            feature_parameters=_feature_parameters(resolved),
+            feature_parameters=_feature_parameters(
+                resolved, signal_length=int(data.size)
+            ),
         )
         return ExtractionResult(values, tuple(diagnostics), provenance)
 
@@ -620,7 +644,9 @@ class FeatureExtractor:
             signal_length,
             self.config.sampling_frequency,
             names,
-            feature_parameters=_feature_parameters(resolved),
+            feature_parameters=_feature_parameters(
+                resolved, signal_length=signal_length
+            ),
         )
         return ExtractionResult(values, diagnostics, provenance)
 

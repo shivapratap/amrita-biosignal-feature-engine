@@ -95,6 +95,7 @@ def test_extract_complexity_features_through_registry_dispatch() -> None:
         "petrosian_fractal_dimension",
         "katz_fractal_dimension",
         "higuchi_fractal_dimension",
+        "detrended_fluctuation_analysis",
     )
     result = extractor.extract(signal, features=names)
     assert tuple(result.values) == names
@@ -105,6 +106,13 @@ def test_extract_complexity_features_through_registry_dispatch() -> None:
         "lempel_ziv_complexity": {"normalize": True},
         "fisher_information": {"order": 2, "delay": 1},
         "higuchi_fractal_dimension": {"k_max": 10},
+        "detrended_fluctuation_analysis": {
+            "minimum_scale": 4,
+            "maximum_scale_fraction": 0.1,
+            "scale_ratio": 1.2,
+            "detrend_order": 1,
+            "scales": (4, 5, 6, 8, 9, 11, 14, 17, 20, 24, 29, 35),
+        },
     }
 
 

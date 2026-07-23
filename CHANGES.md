@@ -38,6 +38,14 @@ before/after values, and a regression test.
   comparisons. ABFE uses the exact OLS denominator; the reference packages add
   a fixed `1e-9`, producing a documented maximum comparison delta below
   `5e-9`.
+- Implemented detrended fluctuation analysis with explicit or deterministic
+  automatic scales, polynomial detrending, exact OLS regression, strict
+  scale/segment validation, and immutable provenance containing the resolved
+  scale tuple and canonical generator settings.
+- Added an independent Vandermonde least-squares segmentation oracle,
+  seeded white-noise and random-walk checks, affine invariance, and equivalent
+  pinned AntroPy/DIHC comparisons. For 50–57 samples, ABFE deliberately uses
+  two scales instead of reproducing the references' false one-point `0.0`.
 - Specified all eight time-domain fractal/complexity features mapped from DIHC
   Feature Manager plus a new Rosenstein largest Lyapunov exponent estimator
   before beginning their staged implementation.
