@@ -7,6 +7,11 @@ before/after values, and a regression test.
 
 ### Fractal and complexity design
 
+- Completed v0.2.0 Release-Readiness Batch A: classified every feature-branch
+  change against the published v0.1.0 commit, confirmed the nine-feature scope
+  and exact external-reference pins, found no tracked generated or credential
+  material, and established a non-destructive workspace-only policy for the
+  imported auditor `AGENTS.md`.
 - Closed the complexity implementation phase after focused independent
   re-audit of remediation commit `e02f88e`: duplicate-embedding Lyapunov
   selection matched the full-distance oracle within approximately `1.1e-16`,

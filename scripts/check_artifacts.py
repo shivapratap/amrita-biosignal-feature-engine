@@ -43,6 +43,7 @@ FORBIDDEN_PARTS = {
     ".ruff_cache",
     "__pycache__",
     ".DS_Store",
+    "AGENTS.md",
 }
 
 
